@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  tf_conversions
 )
 FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
@@ -111,7 +112,7 @@ include_directories( "/usr/include/eigen3" )
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES videostream
-  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf
+  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf tf_conversions
   DEPENDS system_lib
 )
 find_package(Ceres REQUIRED)
