@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
+include_directories( "/usr/include/eigen3" )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
