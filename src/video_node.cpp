@@ -1,9 +1,14 @@
+/*All right reserved.
+ *if tf in rviz can't display, run a roscore first.
+ */
+
 #include <queue>
 #include <sensor_msgs/Imu.h>
 #include <ros/forwards.h>
 #include <sensor_msgs/Image.h>
 
 #include <tf/transform_broadcaster.h>
+#include <tf_conversions/tf_eigen.h>
 #include <opencv2/opencv.hpp>
 
 #include <ros/ros.h>
@@ -22,11 +27,26 @@
 #include <condition_variable>
 #include <thread>
 #include <ceres/ceres.h>
+
+#include <Eigen/Core>
+// 稠密矩阵的代数运算（逆，特征值等）
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+
+#include <sensor_msgs/PointCloud.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+
+
+
 using namespace cv;
 using namespace std;
 
 typedef std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::ImageConstPtr>> mymeasurements;
 
+ros::Publisher cloud_pub;
 std::mutex measurements_mutex;
 std::condition_variable cond;
 
@@ -60,7 +80,7 @@ void image_callback(const sensor_msgs::ImageConstPtr &image_msg)
     measurements_mutex.unlock();
     if(image_queue.size()>=2)
     {
-        ROS_INFO("successfully push image");
+        //ROS_INFO("successfully push image");
         cond.notify_one();
     }
 
@@ -75,7 +95,7 @@ mymeasurements getmeasurements()
     {
         if (imu_queue.empty() || image_queue.empty())
         {
-            ROS_WARN("opps: IMU or Image queue empty!");
+            //ROS_WARN("opps: IMU or Image queue empty!");
             return measurements;
         }
         if (!(imu_queue.back()->header.stamp.toSec() > image_queue.front()->header.stamp.toSec() + 0.0))
@@ -102,7 +122,7 @@ mymeasurements getmeasurements()
         if (IMUs.empty())
             ROS_WARN("no imu between two image");
         measurements.emplace_back(IMUs, img_msg);
-        ROS_INFO("haha: pop measurements successfully~");
+        //ROS_INFO("haha: pop measurements successfully~");
     }
     return measurements;
 }
@@ -220,6 +240,7 @@ void track_danger_points(const Mat& temp_mat, std::vector<featurept>& featurepts
             next_pts.pop_back();
         }
     }
+
     Mat out_image = temp_mat;
     for(auto fpts : featurepts){
         drawKeypoints(out_image, fpts.dangerpoints, out_image, Scalar(0,255,0),2);//draw danger points
@@ -319,6 +340,16 @@ void find_feature_matches ( const Mat& img_1, const Mat& img_2,
     }
 }
 
+Point2f pixel2cam ( const Point2d& p, const Mat& K )
+{
+    return Point2f
+            (
+                    ( p.x - K.at<double>(0,2) ) / K.at<double>(0,0),
+                    ( p.y - K.at<double>(1,2) ) / K.at<double>(1,1)
+            );
+}
+
+
 void pose_estimation_2d2d (
         const std::vector<KeyPoint>& keypoints_1,
         const std::vector<KeyPoint>& keypoints_2,
@@ -326,7 +357,7 @@ void pose_estimation_2d2d (
         Mat& R, Mat& t )
 {
     // 相机内参,TUM Freiburg2
-    Mat K = ( Mat_<double> ( 3,3 ) << 354.83758544921875000, 0, 328.50021362304687500, 0, 354.83068847656250000, 240.57057189941406250, 0, 0, 1 );
+    Mat K = ( Mat_<float> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
 
     //-- 把匹配点转换为vector<Point2f>的形式
     vector<Point2f> points1;
@@ -339,81 +370,92 @@ void pose_estimation_2d2d (
     }
 
     //-- 计算基础矩阵
-    Mat fundamental_matrix;
-    fundamental_matrix = findFundamentalMat ( points1, points2);
-    cout<<"fundamental_matrix is "<<endl<< fundamental_matrix<<endl;
+    //Mat fundamental_matrix;
+    //fundamental_matrix = findFundamentalMat ( points1, points2);
+    //cout<<"fundamental_matrix is "<<endl<< fundamental_matrix<<endl;
 
     //-- 计算本质矩阵
-    Point2d principal_point ( 328.50021362304687500, 240.57057189941406250 );				//相机主点, TUM dataset标定值
-    int focal_length = 354.83;						//相机焦距, TUM dataset标定值
-    Mat essential_matrix;
-    essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point );
-    cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
+    Point2d principal_point ( 327.9541, 242.4097 );				//相机主点, TUM dataset标定值
+    int focal_length = 355;						//相机焦距, TUM dataset标定值
+    Mat essential_matrix, mask, triangulatedPoints2, triangulatedPoints;
+    essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point,RANSAC, 0.999, 1.0, mask );
+    //cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
 
     //-- 计算单应矩阵
-    Mat homography_matrix;
-    homography_matrix = findHomography ( points1, points2, RANSAC, 3 );
-    cout<<"homography_matrix is "<<endl<<homography_matrix<<endl;
+    //Mat homography_matrix, normal;
+    //homography_matrix = findHomography ( points1, points2, RANSAC, 3 );
+    //cout<<"homography_matrix is "<<endl<<homography_matrix<<endl;
 
     //-- 从本质矩阵中恢复旋转和平移信息.
-    recoverPose ( essential_matrix, points1, points2, R, t, focal_length, principal_point );
-    cout<<"R is "<<endl<<R<<endl;
-    cout<<"t is "<<endl<<t<<endl;
-}
+    //cv::recoverPose ( essential_matrix, points1, points2, R, t, focal_length, principal_point,mask );
+    recoverPose( essential_matrix, points1, points2,
+            K, R, t, 200000000000000000.0, mask,
+           triangulatedPoints);
 
-Point2f pixel2cam ( const Point2d& p, const Mat& K )
-{
-    return Point2f
-            (
-                    ( p.x - K.at<double>(0,2) ) / K.at<double>(0,0),
-                    ( p.y - K.at<double>(1,2) ) / K.at<double>(1,1)
-            );
-}
-
-
-void triangulation (
-        const vector< KeyPoint >& keypoint_1,
-        const vector< KeyPoint >& keypoint_2,
-        const std::vector< DMatch >& matches,
-        const Mat& R, const Mat& t,
-        vector< Point3d >& points )
-{
-    Mat T1 = (Mat_<float> (3,4) <<
-                                1,0,0,0,
-            0,1,0,0,
-            0,0,1,0);
-    Mat T2 = (Mat_<float> (3,4) <<
-                                R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
-            R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
-            R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
-    );
-
-    Mat K = ( Mat_<double> ( 3,3 ) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1 );
-    vector<Point2f> pts_1, pts_2;
-    for ( DMatch m:matches )
-    {
-        // 将像素坐标转换至相机坐标
-        pts_1.push_back ( pixel2cam( keypoint_1[m.queryIdx].pt, K) );
-        pts_2.push_back ( pixel2cam( keypoint_2[m.trainIdx].pt, K) );
+    vector<Point3f> goodlandmark;
+    for( int i=0; i < triangulatedPoints.cols; ++i) {
+        if (mask.at<int>(i, 0) == 1) {
+            Point3f temp3f(triangulatedPoints.at<float>(i, 0) / triangulatedPoints.at<float>(i, 3),
+                           triangulatedPoints.at<float>(i, 1) / triangulatedPoints.at<float>(i, 3),
+                           triangulatedPoints.at<float>(i, 2) / triangulatedPoints.at<float>(i, 3));
+            goodlandmark.push_back(temp3f);
+        }
     }
+    sensor_msgs::PointCloud cloud;
+    cloud.header.frame_id = "robot_odom";
+    cloud.points.resize(goodlandmark.size());
+    cloud.channels.resize(1);
+    cloud.channels[0].name = "intensities";
+    cloud.channels[0].values.resize(goodlandmark.size());
 
-    Mat pts_4d;
-    cv::triangulatePoints( T1, T2, pts_1, pts_2, pts_4d );
-
-    // 转换成非齐次坐标
-    for ( int i=0; i<pts_4d.cols; i++ )
+    int count = 0;
+    for(auto gdlmk : goodlandmark)
     {
-        Mat x = pts_4d.col(i);
-        x /= x.at<float>(3,0); // 归一化
-        Point3d p (
-                x.at<float>(0,0),
-                x.at<float>(1,0),
-                x.at<float>(2,0)
-        );
-        points.push_back( p );
+        //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
+//
+        cloud.points[count].x = gdlmk.x;
+        cloud.points[count].y = gdlmk.y;
+        cloud.points[count].z = gdlmk.z;
+        cloud.channels[0].values[count] = count;
+        count++;
     }
+    cloud_pub.publish(cloud);
+
+    /*cout<<triangulatedPoints<<endl;
+    cout<<"tri : "<<triangulatedPoints.size<<endl;
+    cout<<mask<<endl;*/
+
+    /*
+    Eigen::Matrix3f matrix_R;//rotation
+    cv2eigen(R,matrix_R);
+    Eigen::Matrix3f matrix_K;// instrinct para
+    cv2eigen(K,matrix_K);
+    Eigen::Matrix<float,3,1> matrix_t;//translation
+    cv2eigen(t,matrix_t);
+    Eigen::Matrix<float,3,4> matrix_cam1, matrix_cam2;
+
+    matrix_cam2.block<3,3>(0,0) = matrix_K;
+
+    matrix_cam1.block<3,3>(0,0) = matrix_R;
+    matrix_cam1.block<3,1>(0,3) = matrix_t;
+    matrix_cam1 = matrix_K * matrix_cam1;
+
+    cv::Mat mat_cam1, mat_cam2;
+    eigen2cv(matrix_cam1, mat_cam1);
+    eigen2cv(matrix_cam2, mat_cam2);
+
+    cv::triangulatePoints(mat_cam2,mat_cam1,points1,points2,triangulatedPoints);
+    */
+
+    //cv::decomposeHomographyMat(homography_matrix, K, R, t,normal);
+    //cout<<"R is "<<endl<<R<<endl;
+    //cout<<"t is "<<endl<<t<<endl;
 }
 
+
+
+
+Eigen::Matrix<double, 4, 4> matrix_T;
 void processmeasurements(mymeasurements &measurements)
 {
     if(measurements.size()<2)
@@ -437,13 +479,76 @@ void processmeasurements(mymeasurements &measurements)
 
         vector<KeyPoint> keypoints_1, keypoints_2;
         vector<DMatch> matches;
-        find_feature_matches ( temp_mat, next_mat, keypoints_1, keypoints_2, matches );
-        Mat R,t;
-        pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, R, t );
+        find_feature_matches ( next_mat, temp_mat, keypoints_1, keypoints_2, matches );
+        Mat deltaR,deltat;
+
+
+
+        pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
         //ROS_ERROR("step1");
+       /* vector<Point3d> triangulatedPoints3;
+        triangulation(keypoints_1, keypoints_2,matches, deltaR, deltat, triangulatedPoints3);
 
 
-        vector<Point3d> points;
+        sensor_msgs::PointCloud cloud;
+        cloud.header.frame_id = "robot_odom";
+        cloud.points.resize(triangulatedPoints3.size());
+        cloud.channels.resize(1);
+        cloud.channels[0].name = "intensities";
+        cloud.channels[0].values.resize(triangulatedPoints3.size());
+
+        int count = 0;
+        for(unsigned int i = 0; i < triangulatedPoints3.size(); ++i)
+        {
+            //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
+
+            cloud.points[i].x = triangulatedPoints3[i].x;
+            cloud.points[i].y = triangulatedPoints3[i].y;
+            cloud.points[i].z = triangulatedPoints3[i].z;
+            ///triangulatedPoints.at<float>(3,i)
+            cloud.channels[0].values[i] = i;
+
+
+        }
+        cloud_pub.publish(cloud);
+*/
+
+
+
+        Eigen::Matrix<double, 4, 4> matrix_deltaT;
+        matrix_deltaT.setIdentity();
+        Eigen::Matrix<double, 3, 3> matrix_deltaR;
+        Eigen::Matrix<double, 3, 1> matrix_deltat;
+
+        cv2eigen(deltaR,matrix_deltaR );
+        cv2eigen(deltat,matrix_deltat);//change cv to eigen matrix
+        matrix_deltaT.block<3,3>(0,0) = matrix_deltaR;//fill the delta R t into deltaT.
+        matrix_deltaT.block<3,1>(0,3) = matrix_deltat;
+
+        matrix_T = matrix_T * matrix_deltaT;
+        cout<<matrix_T<<endl;
+
+        Eigen::Matrix3d RR = matrix_T.block(0,0,3,3);
+        Eigen::Quaterniond q(RR);
+        tf::Quaternion tf_q;
+        tf::quaternionEigenToTF(q,tf_q);
+
+        tf::Vector3 tf_t;
+        tf::vectorEigenToTF(matrix_T.block(0,0,3,1),tf_t);
+
+
+        static tf::TransformBroadcaster br;
+        tf::Transform transform;
+
+        transform.setOrigin(tf_t);
+        //transform.setOrigin( tf_t );
+        transform.setRotation(tf_q);
+
+
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "robot_odom"));
+
+
+        //vector<Point3d> points;
         //TODO triangulation( keypoints_1, keypoints_2, matches, R, t, points );
     }
     //ROS_INFO("finish track danger points");
@@ -549,7 +654,10 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh_;
     ros::Subscriber imu_sub = nh_.subscribe("/mynteye/imu/data_raw", 2000, imu_callback, ros::TransportHints().tcpNoDelay());
     ros::Subscriber image_sub = nh_.subscribe("/mynteye/left/image_color", 2000, image_callback);
+    cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
+    matrix_T.setIdentity();
     std::thread measurement_process{process};
     //optimization();
     ros::spin();
+    return 0;
 }
