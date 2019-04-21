@@ -588,6 +588,28 @@ void processmeasurements(mymeasurements &measurements)
 
 
         static tf::TransformBroadcaster br;
+
+
+        tf::Transform transform2;
+
+
+        tf::Vector3 vec_fix(1,1,1);
+        transform2.setOrigin(vec_fix);
+
+
+        Eigen::Matrix3d R_fix;
+        R_fix << 0, 0, -1,
+                1, 0, 0,
+                0, -1, 0;
+        Eigen::Quaterniond q_fix(R_fix);
+        tf::Quaternion tf_qfix;
+        tf::quaternionEigenToTF(q_fix,tf_qfix);
+        transform2.setRotation(tf_qfix);
+
+        br.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "world", "robot_fixed"));
+
+
+
         tf::Transform transform;
         tf::Vector3 vec_zero(0,0,0);
         transform.setOrigin(tf_t);
@@ -595,9 +617,8 @@ void processmeasurements(mymeasurements &measurements)
         transform.setRotation(tf_q);
 
 
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "robot_odom"));
 
-
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "robot_fixed", "robot_odom"));
         //vector<Point3d> points;
         //TODO triangulation( keypoints_1, keypoints_2, matches, R, t, points );
     }
