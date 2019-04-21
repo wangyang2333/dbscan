@@ -241,6 +241,7 @@ void track_danger_points(const Mat& temp_mat, std::vector<featurept>& featurepts
         }
     }
 
+    /*TODO
     Mat out_image = temp_mat;
     for(auto fpts : featurepts){
         drawKeypoints(out_image, fpts.dangerpoints, out_image, Scalar(0,255,0),2);//draw danger points
@@ -259,6 +260,7 @@ void track_danger_points(const Mat& temp_mat, std::vector<featurept>& featurepts
 
     cv::imshow("track_optical", out_image);
     cv::waitKey(3);
+     */
 
 
 
@@ -357,7 +359,7 @@ void pose_estimation_2d2d (
         Mat& R, Mat& t )
 {
     // 相机内参,TUM Freiburg2
-    Mat K = ( Mat_<float> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
+    Mat K = ( Mat_<double> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
 
     //-- 把匹配点转换为vector<Point2f>的形式
     vector<Point2f> points1;
@@ -377,7 +379,8 @@ void pose_estimation_2d2d (
     //-- 计算本质矩阵
     Point2d principal_point ( 327.9541, 242.4097 );				//相机主点, TUM dataset标定值
     int focal_length = 355;						//相机焦距, TUM dataset标定值
-    Mat essential_matrix, mask, triangulatedPoints2, triangulatedPoints;
+    Mat essential_matrix, mask, triangulatedPoints2;
+    Mat triangulatedPoints = Mat_<float>();
     essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point,RANSAC, 0.999, 1.0, mask );
     //cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
 
@@ -389,16 +392,57 @@ void pose_estimation_2d2d (
     //-- 从本质矩阵中恢复旋转和平移信息.
     //cv::recoverPose ( essential_matrix, points1, points2, R, t, focal_length, principal_point,mask );
     recoverPose( essential_matrix, points1, points2,
-            K, R, t, 200000000000000000.0, mask,
-           triangulatedPoints);
+            K, R, t, 200.0, mask,
+           triangulatedPoints2);
 
-    vector<Point3f> goodlandmark;
-    for( int i=0; i < triangulatedPoints.cols; ++i) {
+
+
+
+
+    Mat T1 = (Mat_<float> (3,4) <<
+            1,0,0,0,
+            0,1,0,0,
+            0,0,1,0);
+    Mat T2 = (Mat_<float> (3,4) <<
+                                R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
+            R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
+            R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
+    );
+
+    vector<Point2f> pts_1, pts_2;
+    for ( DMatch m:matches )
+    {
+        // 将像素坐标转换至相机坐标
+        pts_1.push_back ( pixel2cam( keypoints_1[m.queryIdx].pt, K) );
+        pts_2.push_back ( pixel2cam( keypoints_2[m.trainIdx].pt, K) );
+    }
+
+
+    cv::triangulatePoints( T1, T2, pts_1, pts_2, triangulatedPoints );
+/*
+    // 转换成非齐次坐标
+    for ( int i=0; i<pts_4d.cols; i++ )
+    {
+        Mat x = pts_4d.col(i);
+        x /= x.at<float>(3,0); // 归一化
+        Point3d p (
+                x.at<float>(0,0),
+                x.at<float>(1,0),
+                x.at<float>(2,0)
+        );
+        points.push_back( p );
+    }
+*/
+
+    vector<Point3d> goodlandmark;
+    for( int i=0; i < triangulatedPoints.cols; i++) {
         if (mask.at<int>(i, 0) == 1) {
-            Point3f temp3f(triangulatedPoints.at<float>(i, 0) / triangulatedPoints.at<float>(i, 3),
-                           triangulatedPoints.at<float>(i, 1) / triangulatedPoints.at<float>(i, 3),
-                           triangulatedPoints.at<float>(i, 2) / triangulatedPoints.at<float>(i, 3));
-            goodlandmark.push_back(temp3f);
+            Mat x = triangulatedPoints.col(i);
+            x /= x.at<float>(3.0);
+            Point3d temp3d(            x.at<float>(0,0),
+                                       x.at<float>(1,0),
+                                       x.at<float>(2,0) );
+            goodlandmark.push_back(temp3d);
         }
     }
     sensor_msgs::PointCloud cloud;
@@ -485,6 +529,12 @@ void processmeasurements(mymeasurements &measurements)
 
 
         pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
+
+        Mat out_image = temp_mat;
+        drawKeypoints(out_image, keypoints_1, out_image, Scalar(0,255,0),2);//draw danger points
+        cv::imshow("track_optical", out_image);
+        cv::waitKey(3);
+
         //ROS_ERROR("step1");
        /* vector<Point3d> triangulatedPoints3;
         triangulation(keypoints_1, keypoints_2,matches, deltaR, deltat, triangulatedPoints3);
@@ -539,7 +589,7 @@ void processmeasurements(mymeasurements &measurements)
 
         static tf::TransformBroadcaster br;
         tf::Transform transform;
-
+        tf::Vector3 vec_zero(0,0,0);
         transform.setOrigin(tf_t);
         //transform.setOrigin( tf_t );
         transform.setRotation(tf_q);
