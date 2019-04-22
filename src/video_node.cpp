@@ -341,7 +341,7 @@ void find_feature_matches ( const Mat& img_1, const Mat& img_2,
         }
     }
 }
-
+Mat K = ( Mat_<double> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
 Point2f pixel2cam ( const Point2d& p, const Mat& K )
 {
     return Point2f
@@ -352,6 +352,37 @@ Point2f pixel2cam ( const Point2d& p, const Mat& K )
 }
 
 
+
+void triangulation (
+        const vector< KeyPoint >& keypoints_1,
+        const vector< KeyPoint >& keypoints_2,
+        const std::vector< DMatch >& matches,
+        const Mat& R, const Mat& t,
+        Mat& triangulatedPoints )
+{
+    Mat T1 = (Mat_<float> (3,4) <<
+                                1,0,0,0,
+            0,1,0,0,
+            0,0,1,0);
+    Mat T2 = (Mat_<float> (3,4) <<
+                                R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
+            R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
+            R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
+    );
+
+    vector<Point2f> pts_1, pts_2;
+    for ( DMatch m:matches )
+    {
+        // 将像素坐标转换至相机坐标
+        pts_1.push_back ( pixel2cam( keypoints_1[m.queryIdx].pt, K) );
+        pts_2.push_back ( pixel2cam( keypoints_2[m.trainIdx].pt, K) );
+    }
+
+
+    cv::triangulatePoints( T1, T2, pts_1, pts_2, triangulatedPoints );
+}
+
+
 void pose_estimation_2d2d (
         const std::vector<KeyPoint>& keypoints_1,
         const std::vector<KeyPoint>& keypoints_2,
@@ -359,7 +390,7 @@ void pose_estimation_2d2d (
         Mat& R, Mat& t )
 {
     // 相机内参,TUM Freiburg2
-    Mat K = ( Mat_<double> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
+
 
     //-- 把匹配点转换为vector<Point2f>的形式
     vector<Point2f> points1;
@@ -396,31 +427,9 @@ void pose_estimation_2d2d (
            triangulatedPoints2);
 
 
-
-
-
-    Mat T1 = (Mat_<float> (3,4) <<
-            1,0,0,0,
-            0,1,0,0,
-            0,0,1,0);
-    Mat T2 = (Mat_<float> (3,4) <<
-                                R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
-            R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
-            R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
-    );
-
-    vector<Point2f> pts_1, pts_2;
-    for ( DMatch m:matches )
-    {
-        // 将像素坐标转换至相机坐标
-        pts_1.push_back ( pixel2cam( keypoints_1[m.queryIdx].pt, K) );
-        pts_2.push_back ( pixel2cam( keypoints_2[m.trainIdx].pt, K) );
-    }
-
-
-    cv::triangulatePoints( T1, T2, pts_1, pts_2, triangulatedPoints );
+    triangulation( keypoints_1, keypoints_2, matches, R, t, triangulatedPoints );
 /*
-    // 转换成非齐次坐标
+    // gaobo转换成非齐次坐标
     for ( int i=0; i<pts_4d.cols; i++ )
     {
         Mat x = pts_4d.col(i);
