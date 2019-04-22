@@ -44,8 +44,8 @@
 using namespace cv;
 using namespace std;
 
-typedef std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::ImageConstPtr>> mymeasurements;
-
+typedef std::queue<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::ImageConstPtr>> mymeasurements;
+typedef std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::ImageConstPtr> mymeasurement;
 ros::Publisher cloud_pub;
 std::mutex measurements_mutex;
 std::condition_variable cond;
@@ -88,20 +88,19 @@ void image_callback(const sensor_msgs::ImageConstPtr &image_msg)
 
 }
 
-mymeasurements getmeasurements()
+void getmeasurements(mymeasurements& measurements)
 {
-    mymeasurements measurements;
     while (true)
     {
         if (imu_queue.empty() || image_queue.empty())
         {
             //ROS_WARN("opps: IMU or Image queue empty!");
-            return measurements;
+            return;
         }
         if (!(imu_queue.back()->header.stamp.toSec() > image_queue.front()->header.stamp.toSec() + 0.0))
         {
             ROS_WARN("wait for imu, only should happen at the beginning");
-            return measurements;
+            return;
         }
 
         if (!(imu_queue.front()->header.stamp.toSec() < image_queue.front()->header.stamp.toSec() + 0.0))
@@ -121,10 +120,10 @@ mymeasurements getmeasurements()
         IMUs.emplace_back(imu_queue.front());
         if (IMUs.empty())
             ROS_WARN("no imu between two image");
-        measurements.emplace_back(IMUs, img_msg);
+        measurements.emplace(IMUs, img_msg);
         //ROS_INFO("haha: pop measurements successfully~");
     }
-    return measurements;
+    return;
 }
 
 
@@ -517,15 +516,19 @@ void processmeasurements(mymeasurements &measurements)
         ROS_ERROR("%d",int(measurements.size()));
         return;
     }
-    for(mymeasurements::iterator measurement = measurements.begin(); measurement<measurements.end()-1; ++measurement )
+    for(; measurements.size() > 1;)
     {
         //ROS_ERROR("step3");
-        Mat temp_mat = rosImageToCvMat(measurement->second);
+        mymeasurement measurement = measurements.front();
+        measurements.pop();
+        Mat temp_mat = rosImageToCvMat(measurement.second);
         //ROS_ERROR("step4");
         std::vector<featurept> featurepts;
         find_danger_points(temp_mat, featurepts);
-        //ROS_ERROR("step0");
-        Mat next_mat = rosImageToCvMat( (measurement+1)->second );
+
+        measurement = measurements.front();
+        measurements.pop();
+        Mat next_mat = rosImageToCvMat( measurement.second );
         //ROS_ERROR("step2");
         //to track all danger-points between two frames.
         track_danger_points(temp_mat, featurepts, next_mat);
@@ -534,8 +537,6 @@ void processmeasurements(mymeasurements &measurements)
         vector<DMatch> matches;
         find_feature_matches ( next_mat, temp_mat, keypoints_1, keypoints_2, matches );
         Mat deltaR,deltat;
-
-
 
         pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
 
@@ -716,13 +717,13 @@ void optimization()
 }
  */
 
-
+mymeasurements measurements;
 void process(){
     while(true)
     {
         std::unique_lock<std::mutex> locker(measurements_mutex);
         cond.wait(locker);
-        mymeasurements measurements = getmeasurements();
+        getmeasurements(measurements);
         processmeasurements(measurements);
         locker.unlock();
     }
