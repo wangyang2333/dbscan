@@ -68,7 +68,7 @@ public:
 class mymap{
 public:
     vector<cv::Mat> keyframes;
-    vector<pair<vector<KeyPoint>, vector<Point3d>>> keypointss;
+    vector<pair<vector<KeyPoint>, vector<Point3f>>> keypointss;
     //void insertkeyframe(cv::Mat kf);
     //void insertkeypoint(std::pair<cv::KeyPoint, Point3d> kp);
 };
@@ -242,7 +242,7 @@ void track_danger_points(const Mat& temp_mat, std::vector<featurept>& featurepts
         }
     }
     if(temp_pts.size()!=0)
-    cv::calcOpticalFlowPyrLK(temp_mat, next_mat, temp_pts, next_pts, status, err, cv::Size(21, 21), 3);
+        cv::calcOpticalFlowPyrLK(temp_mat, next_mat, temp_pts, next_pts, status, err, cv::Size(21, 21), 3);
 
     for(auto fpts = featurepts.rbegin(); fpts < featurepts.rend(); ++fpts ) {
         for(auto nextdangerpts = fpts->nextdangerpoints.rbegin(); nextdangerpts != fpts->nextdangerpoints.rend(); ++fpts){
@@ -274,30 +274,30 @@ void track_danger_points(const Mat& temp_mat, std::vector<featurept>& featurepts
 
 
 
-       // cv::imshow("track_optical", temp_mat);
-        //ROS_INFO("Calculates an optical flow for danger points");
-        /*
-        if (temp_pts.size() > 0){
-            cv::calcOpticalFlowPyrLK(temp_mat, next_mat, temp_pts, next_pts, status, err, cv::Size(21, 21), 3);
+    // cv::imshow("track_optical", temp_mat);
+    //ROS_INFO("Calculates an optical flow for danger points");
+    /*
+    if (temp_pts.size() > 0){
+        cv::calcOpticalFlowPyrLK(temp_mat, next_mat, temp_pts, next_pts, status, err, cv::Size(21, 21), 3);
 
-            Mat out_image;
-            drawKeypoints(temp_mat, fpts->dangerpoints, out_image, Scalar(0,255,0),2);
-            circle(out_image, fpts->keypoint.pt, 10, Scalar(255, 0, 0),2);
-            for(auto ppts : fpts->dangerpoints)
-                line(out_image, fpts->keypoint.pt, ppts.pt, Scalar(0, 0, 255), 2);
-            int i = 0;
-            for(auto tpt : temp_pts)
-            {
-                if(status[i]=1)line(out_image, tpt, next_pts[i], Scalar(0, 255, 255), 4);
-                i++;
-            }
-            cv::imshow("track_optical", out_image);
-            cv::waitKey(3);
-
+        Mat out_image;
+        drawKeypoints(temp_mat, fpts->dangerpoints, out_image, Scalar(0,255,0),2);
+        circle(out_image, fpts->keypoint.pt, 10, Scalar(255, 0, 0),2);
+        for(auto ppts : fpts->dangerpoints)
+            line(out_image, fpts->keypoint.pt, ppts.pt, Scalar(0, 0, 255), 2);
+        int i = 0;
+        for(auto tpt : temp_pts)
+        {
+            if(status[i]=1)line(out_image, tpt, next_pts[i], Scalar(0, 255, 255), 4);
+            i++;
         }
-        */
-        //ROS_INFO("Finish calculating an optical flow for danger points");
-        //Calculates an optical flow for a sparse feature set using the iterative Lucas-Kanade method with pyramids.
+        cv::imshow("track_optical", out_image);
+        cv::waitKey(3);
+
+    }
+    */
+    //ROS_INFO("Finish calculating an optical flow for danger points");
+    //Calculates an optical flow for a sparse feature set using the iterative Lucas-Kanade method with pyramids.
 
 }
 
@@ -415,8 +415,8 @@ void pose_estimation_2d2d (
     essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point,RANSAC, 0.999, 1.0, mask );
 
     recoverPose( essential_matrix, points1, points2,
-            K, R, t, 200.0, mask,
-           triangulatedPoints2);
+                 K, R, t, 200.0, mask,
+                 triangulatedPoints2);
 }
 
 
@@ -444,22 +444,22 @@ void processmeasurements(mymeasurements &measurements)
 
         //--------------must do matches--------------------------//
         vector<KeyPoint> keypoints_1, keypoints_2;
-        vector<DMatch> matches;
+        vector<DMatch> matches, matches2;
         find_feature_matches ( next_mat, temp_mat, keypoints_1, keypoints_2, matches );
 
 
         Mat deltaR,deltat;
-        if(initialized = false){// if not initialized, do 2d-2d match and triangulation!
+        if(initialized == false){// if not initialized, do 2d-2d match and triangulation!
             pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
             Mat triangulatedPoints = Mat_<float>();
             triangulation( keypoints_1, keypoints_2, matches, deltaR, deltat, triangulatedPoints );
-            vector<Point3d> goodlandmark;   //this is good 3d points in next frame?
+            vector<Point3f> goodlandmark;   //this is good 3d points in next frame?
             vector<KeyPoint> goodkeypoint; // this is good 2d points in next frame?
             for( int i=0; i < triangulatedPoints.cols; i++) {
                 if (mask.at<int>(i, 0) == 1) {
                     Mat x = triangulatedPoints.col(i);
                     x /= x.at<float>(3.0);
-                    Point3d temp3d(x.at<float>(0,0), x.at<float>(1,0), x.at<float>(2,0) );
+                    Point3f temp3d(x.at<float>(0,0), x.at<float>(1,0), x.at<float>(2,0) );
                     goodlandmark.push_back(temp3d);
                     goodkeypoint.push_back(keypoints_1[i]);//key points 1 is in next frame;
                 }
@@ -485,20 +485,28 @@ void processmeasurements(mymeasurements &measurements)
             }
             cloud_pub.publish(cloud);
             initialized = true;
+            //ROS_INFO("begin5");
+
         }
         else{//if initialized do PnP-RANSAC and triangulation
             vector<Point3f> pts_3d;
             vector<Point2f> pts_2d;
-            for(DMatch m:matches){
-                ushort d = d1.ptr<unsigned short> (int ( keypoints_1[m.queryIdx].pt.y )) [ int ( keypoints_1[m.queryIdx].pt.x ) ];
-                if ( d == 0 )   // bad depth
-                    continue;
-                float dd = d/5000.0;
-                Point2d p1 = pixel2cam ( keypoints_1[m.queryIdx].pt, K );
-                pts_3d.push_back ( Point3f ( p1.x*dd, p1.y*dd, dd ) );
-                pts_2d.push_back ( keypoints_2[m.trainIdx].pt );
+            //ROS_INFO("begin1");
+            find_feature_matches( next_mat, MAP1.keyframes.back(), keypoints_1, MAP1.keypointss.back().first, matches2 );
+            //ROS_INFO("begin2");
+            for(DMatch m:matches2){
+                pts_3d.push_back ( MAP1.keypointss.back().second[m.trainIdx]);
+                pts_2d.push_back ( keypoints_2[m.queryIdx].pt );
             }
-            solvePnP();
+            cout<<"pts3d:"<<pts_3d.size()<<endl;
+            cout<<"pts2d:"<<pts_2d.size()<<endl;
+            //ROS_INFO("begin3");
+            Mat r;
+            solvePnP( pts_3d, pts_2d, K, Mat(), r, deltat, false);
+            cout<<"t:"<<deltat<<endl;
+            //ROS_INFO("begin4");
+            cv::Rodrigues ( r, deltaR );
+            cout<<"deltaR: "<<deltaR<<endl;
         }
         //--------------tf display------------------------------------------//
         Mat out_image = temp_mat;
@@ -566,87 +574,6 @@ void processmeasurements(mymeasurements &measurements)
     //ROS_INFO("finish track danger points");
 }
 
-/*
-struct CostFunctor1
-{
-    template <typename T>
-    bool operator()(const T* const x1, const T* const x2, T* residual)const
-    {
-        residual[0] = x1[0] + T(10.0) * x2[0] ;
-        return true;
-    }
-};
-struct CostFunctor2
-{
-    template <typename T>
-    bool operator()(const T* const x3, const T* const x4, T* residual)const
-    {
-        residual[0] = T(sqrt(5.0)) * ( x3[0]  - x4[0]  );
-        return true;
-    }
-};
-struct CostFunctor3
-{
-    template <typename T>
-    bool operator()(const T* const x2, const T* x3, T* residual)const
-    {
-        residual[0] = (x2[0]  - T(2.0) * x3[0] ) * (x2[0]  - T(2.0) * x3[0] );
-        return true;
-    }
-};
-struct CostFunctor4
-{
-    template <typename T>
-    bool operator()(const T* const x1, const T* const x4, T* residual)const
-    {
-        residual[0] = T(sqrt(10.0))*(x1[0]  - x4[0] )*(x1[0]  - x4[0] );
-        return true;
-    }
-};
-void optimization()
-{
-    double initial_x = 5.0;
-    double x1 = initial_x;
-    double x2 = initial_x;
-    double x3 = initial_x;
-    double x4 = initial_x;
-
-    ceres::Problem problem;
-
-    ceres::CostFunction *cost_function1 = new ceres::NumericDiffCostFunction<CostFunctor1,ceres::CENTRAL,1,1,1>
-            (new CostFunctor1);
-    problem.AddResidualBlock(cost_function1, NULL, &x1, &x2);
-
-    ceres::CostFunction *cost_function2 = new ceres::NumericDiffCostFunction<CostFunctor2,ceres::CENTRAL,1,1,1>
-            (new CostFunctor2);
-    problem.AddResidualBlock(cost_function2, NULL, &x3, &x4);
-
-    ceres::CostFunction *cost_function3 = new ceres::NumericDiffCostFunction<CostFunctor3,ceres::CENTRAL,1,1,1>
-            (new CostFunctor3);
-    problem.AddResidualBlock(cost_function3, NULL, &x2, &x3);
-
-    ceres::CostFunction *cost_function4 = new ceres::NumericDiffCostFunction<CostFunctor4,ceres::CENTRAL,1,1,1>
-            (new CostFunctor4);
-    problem.AddResidualBlock(cost_function4, NULL, &x1, &x4);
-
-
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
-    options.minimizer_progress_to_stdout = true;
-
-    ceres::Solver::Summary summary;
-    Solve(options, &problem, &summary);
-
-    std::cout<< summary.BriefReport()<<"\n";
-    std::cout << summary.FullReport() << "\n";
-    std::cout << "Final x1 = " << x1
-              << ", x2 = " << x2
-              << ", x3 = " << x3
-              << ", x4 = " << x4
-              << "\n";
-    return;
-}
- */
 
 mymeasurements measurements;
 void process(){
