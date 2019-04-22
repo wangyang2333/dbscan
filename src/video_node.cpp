@@ -65,6 +65,17 @@ public:
     int popcount = 0;
 };
 
+class mymap{
+public:
+    vector<cv::Mat> keyframes;
+    vector<std::pair<cv::KeyPoint, Point3d>> keypoints;
+    //void insertkeyframe(cv::Mat kf);
+    //void insertkeypoint(std::pair<cv::KeyPoint, Point3d> kp);
+};
+
+mymap MAP1;
+
+
 void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     measurements_mutex.lock();
@@ -381,7 +392,7 @@ void triangulation (
     cv::triangulatePoints( T1, T2, pts_1, pts_2, triangulatedPoints );
 }
 
-
+Mat mask;
 void pose_estimation_2d2d (
         const std::vector<KeyPoint>& keypoints_1,
         const std::vector<KeyPoint>& keypoints_2,
@@ -409,8 +420,8 @@ void pose_estimation_2d2d (
     //-- 计算本质矩阵
     Point2d principal_point ( 327.9541, 242.4097 );				//相机主点, TUM dataset标定值
     int focal_length = 355;						//相机焦距, TUM dataset标定值
-    Mat essential_matrix, mask, triangulatedPoints2;
-    Mat triangulatedPoints = Mat_<float>();
+    Mat essential_matrix, triangulatedPoints2;
+
     essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point,RANSAC, 0.999, 1.0, mask );
     //cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
 
@@ -424,54 +435,6 @@ void pose_estimation_2d2d (
     recoverPose( essential_matrix, points1, points2,
             K, R, t, 200.0, mask,
            triangulatedPoints2);
-
-
-    triangulation( keypoints_1, keypoints_2, matches, R, t, triangulatedPoints );
-/*
-    // gaobo转换成非齐次坐标
-    for ( int i=0; i<pts_4d.cols; i++ )
-    {
-        Mat x = pts_4d.col(i);
-        x /= x.at<float>(3,0); // 归一化
-        Point3d p (
-                x.at<float>(0,0),
-                x.at<float>(1,0),
-                x.at<float>(2,0)
-        );
-        points.push_back( p );
-    }
-*/
-
-    vector<Point3d> goodlandmark;
-    for( int i=0; i < triangulatedPoints.cols; i++) {
-        if (mask.at<int>(i, 0) == 1) {
-            Mat x = triangulatedPoints.col(i);
-            x /= x.at<float>(3.0);
-            Point3d temp3d(            x.at<float>(0,0),
-                                       x.at<float>(1,0),
-                                       x.at<float>(2,0) );
-            goodlandmark.push_back(temp3d);
-        }
-    }
-    sensor_msgs::PointCloud cloud;
-    cloud.header.frame_id = "robot_odom";
-    cloud.points.resize(goodlandmark.size());
-    cloud.channels.resize(1);
-    cloud.channels[0].name = "intensities";
-    cloud.channels[0].values.resize(goodlandmark.size());
-
-    int count = 0;
-    for(auto gdlmk : goodlandmark)
-    {
-        //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
-//
-        cloud.points[count].x = gdlmk.x;
-        cloud.points[count].y = gdlmk.y;
-        cloud.points[count].z = gdlmk.z;
-        cloud.channels[0].values[count] = count;
-        count++;
-    }
-    cloud_pub.publish(cloud);
 
     /*cout<<triangulatedPoints<<endl;
     cout<<"tri : "<<triangulatedPoints.size<<endl;
@@ -506,7 +469,7 @@ void pose_estimation_2d2d (
 
 
 
-
+Mat temp_mat, next_mat;
 Eigen::Matrix<double, 4, 4> matrix_T;
 void processmeasurements(mymeasurements &measurements)
 {
@@ -518,62 +481,88 @@ void processmeasurements(mymeasurements &measurements)
     }
     for(; measurements.size() > 1;)
     {
-        //ROS_ERROR("step3");
-        mymeasurement measurement = measurements.front();
+        temp_mat = next_mat;
+        next_mat = rosImageToCvMat(measurements.front().second);
         measurements.pop();
-        Mat temp_mat = rosImageToCvMat(measurement.second);
+        if(temp_mat.empty())return;
         //ROS_ERROR("step4");
         std::vector<featurept> featurepts;
-        find_danger_points(temp_mat, featurepts);
+        //TODO find_danger_points(temp_mat, featurepts);
+        //TODO track_danger_points(temp_mat, featurepts, next_mat);
 
-        measurement = measurements.front();
-        measurements.pop();
-        Mat next_mat = rosImageToCvMat( measurement.second );
-        //ROS_ERROR("step2");
-        //to track all danger-points between two frames.
-        track_danger_points(temp_mat, featurepts, next_mat);
-
+        //--------------VO--------------------------------------------------//
         vector<KeyPoint> keypoints_1, keypoints_2;
         vector<DMatch> matches;
         find_feature_matches ( next_mat, temp_mat, keypoints_1, keypoints_2, matches );
         Mat deltaR,deltat;
-
         pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
 
+        Mat triangulatedPoints = Mat_<float>();
+        triangulation( keypoints_1, keypoints_2, matches, deltaR, deltat, triangulatedPoints );
+        vector<Point3d> goodlandmark;
+        for( int i=0; i < triangulatedPoints.cols; i++) {
+            if (mask.at<int>(i, 0) == 1) {
+                Mat x = triangulatedPoints.col(i);
+                x /= x.at<float>(3.0);
+                Point3d temp3d(            x.at<float>(0,0),
+                                           x.at<float>(1,0),
+                                           x.at<float>(2,0) );
+                goodlandmark.push_back(temp3d);
+            }
+        }
+        sensor_msgs::PointCloud cloud;
+        cloud.header.frame_id = "robot_odom";
+        cloud.points.resize(goodlandmark.size());
+        cloud.channels.resize(1);
+        cloud.channels[0].name = "intensities";
+        cloud.channels[0].values.resize(goodlandmark.size());
+
+        int count = 0;
+        for(auto gdlmk : goodlandmark)
+        {
+            //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
+//
+            cloud.points[count].x = gdlmk.x;
+            cloud.points[count].y = gdlmk.y;
+            cloud.points[count].z = gdlmk.z;
+            cloud.channels[0].values[count] = count;
+            count++;
+        }
+        cloud_pub.publish(cloud);
+
+
+        //--------------tf display------------------------------------------//
+        //ROS_ERROR("step1");
+        /* vector<Point3d> triangulatedPoints3;
+         triangulation(keypoints_1, keypoints_2,matches, deltaR, deltat, triangulatedPoints3);
+
+
+         sensor_msgs::PointCloud cloud;
+         cloud.header.frame_id = "robot_odom";
+         cloud.points.resize(triangulatedPoints3.size());
+         cloud.channels.resize(1);
+         cloud.channels[0].name = "intensities";
+         cloud.channels[0].values.resize(triangulatedPoints3.size());
+
+         int count = 0;
+         for(unsigned int i = 0; i < triangulatedPoints3.size(); ++i)
+         {
+             //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
+
+             cloud.points[i].x = triangulatedPoints3[i].x;
+             cloud.points[i].y = triangulatedPoints3[i].y;
+             cloud.points[i].z = triangulatedPoints3[i].z;
+             ///triangulatedPoints.at<float>(3,i)
+             cloud.channels[0].values[i] = i;
+
+
+         }
+         cloud_pub.publish(cloud);
+ */
         Mat out_image = temp_mat;
         drawKeypoints(out_image, keypoints_1, out_image, Scalar(0,255,0),2);//draw danger points
         cv::imshow("track_optical", out_image);
         cv::waitKey(3);
-
-        //ROS_ERROR("step1");
-       /* vector<Point3d> triangulatedPoints3;
-        triangulation(keypoints_1, keypoints_2,matches, deltaR, deltat, triangulatedPoints3);
-
-
-        sensor_msgs::PointCloud cloud;
-        cloud.header.frame_id = "robot_odom";
-        cloud.points.resize(triangulatedPoints3.size());
-        cloud.channels.resize(1);
-        cloud.channels[0].name = "intensities";
-        cloud.channels[0].values.resize(triangulatedPoints3.size());
-
-        int count = 0;
-        for(unsigned int i = 0; i < triangulatedPoints3.size(); ++i)
-        {
-            //ROS_ERROR("i:%d x= %f y= %f z= %f ",i,triangulatedPoints3[i].x,triangulatedPoints3[i].y,triangulatedPoints3[i].z);
-
-            cloud.points[i].x = triangulatedPoints3[i].x;
-            cloud.points[i].y = triangulatedPoints3[i].y;
-            cloud.points[i].z = triangulatedPoints3[i].z;
-            ///triangulatedPoints.at<float>(3,i)
-            cloud.channels[0].values[i] = i;
-
-
-        }
-        cloud_pub.publish(cloud);
-*/
-
-
 
         Eigen::Matrix<double, 4, 4> matrix_deltaT;
         matrix_deltaT.setIdentity();
