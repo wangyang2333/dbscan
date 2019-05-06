@@ -216,11 +216,11 @@ Mat rosImageToCvMat(sensor_msgs::ImageConstPtr image){
         ROS_ERROR("cv_bridge exception: %s", e.what());
     }
     Mat img_1;
-    static float K[3][3] = {354.83758544921875000,0,   328.50021362304687500,
+    static float KKK[3][3] = {354.83758544921875000,0,   328.50021362304687500,
                             0, 354.83068847656250000,  240.57057189941406250,
                             0,                     0,        1};
     static float KK[4] = {-0.29249572753906250, 0.07487106323242188, -0.00019836425781250, -0.00031661987304688};
-    cv::Mat camera_matrix = cv::Mat(3, 3, CV_32FC1,K);
+    cv::Mat camera_matrix = cv::Mat(3, 3, CV_32FC1,KKK);
     cv::Mat distortion_coefficients = cv::Mat(4,1,CV_32FC1,KK);
     undistort(cv_ptr->image, img_1, camera_matrix, distortion_coefficients);
     return img_1;
@@ -352,6 +352,7 @@ void find_feature_matches ( const Mat& img_1, const Mat& img_2,
     }
 }
 Mat K = ( Mat_<double> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
+Mat Kfloat = ( Mat_<float> ( 3,3 ) <<354.9553, 0, 327.9541, 0, 355.4596, 242.4097, 0, 0, 1 );
 Point2f pixel2cam ( const Point2d& p, const Mat& K )
 {
     return Point2f
@@ -449,12 +450,13 @@ void processmeasurements(mymeasurements &measurements)
 
 
         Mat deltaR,deltat;
-        if(initialized == false){// if not initialized, do 2d-2d match and triangulation!
+        if(initialized== false){// if not initialized, do 2d-2d match and triangulation!
             pose_estimation_2d2d ( keypoints_1, keypoints_2, matches, deltaR, deltat );
             Mat triangulatedPoints = Mat_<float>();
             triangulation( keypoints_1, keypoints_2, matches, deltaR, deltat, triangulatedPoints );
             vector<Point3f> goodlandmark;   //this is good 3d points in next frame?
             vector<KeyPoint> goodkeypoint; // this is good 2d points in next frame?
+            cout<<mask;
             for( int i=0; i < triangulatedPoints.cols; i++) {
                 if (mask.at<int>(i, 0) == 1) {
                     Mat x = triangulatedPoints.col(i);
@@ -498,8 +500,8 @@ void processmeasurements(mymeasurements &measurements)
                 pts_3d.push_back ( MAP1.keypointss.back().second[m.trainIdx]);
                 pts_2d.push_back ( keypoints_2[m.queryIdx].pt );
             }
-            cout<<"pts3d:"<<pts_3d.size()<<endl;
-            cout<<"pts2d:"<<pts_2d.size()<<endl;
+            cout<<"pts3d:"<<pts_3d<<endl;
+            cout<<"pts2d:"<<pts_2d<<endl;
             //ROS_INFO("begin3");
             Mat r;
             solvePnP( pts_3d, pts_2d, K, Mat(), r, deltat, false);
