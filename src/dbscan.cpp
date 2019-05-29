@@ -251,7 +251,6 @@ void scan_callback(const sensor_msgs::LaserScan::ConstPtr& scan)
     centers.header.frame_id=scan->header.frame_id;
     centers.angle_min=scan->angle_min;
     centers.angle_max=scan->angle_max;
-    // ROS_INFO("min: %f,max : %f",scan2.angle_min,scan2.angle_max);
     centers.angle_increment=scan->angle_increment;
     centers.time_increment=scan->time_increment;
     centers.range_min=scan->range_min;
