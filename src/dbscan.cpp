@@ -198,14 +198,16 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         cout<<"core:"<<corePoint[i].x<<","<<corePoint[i].y<<","<<corePoint[i].cluster<<"\n";
     }
     centers.ranges.clear();
-    centers.ranges.resize(640);
+    centers.ranges.resize(1000);
 
-    //---------------remove noise again----------
-    for(int f = 0; f<=data.size(); f++)
+    //---------------remove little cluster----------
+    for(int f = 0; f<data.size(); f++)
     {
         if(data[f].size()<=10) data.erase(data.begin()+f);
     }
+    //----------------------------------------------
 
+    cout<<"cluster size:"<<data.size()<<endl;
     for(int j = 0; j < data.size() ;j ++){
         //----------------ceres test---------------
         double rouR = 2.2689;
@@ -227,17 +229,28 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         ceres::Solver::Summary summary;
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
-        std::cout << "Initial rouR: " << 0.0 << " faiR: " << 0.0 << " r: " << 0.0 <<"\n";
+        //std::cout << "Initial rouR: " << 0.0 << " faiR: " << 0.0 << " r: " << 0.0 <<"\n";
         std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
         if(rouR > 0){
-            cout<<"fai_int:"<<int(faiR*180.0/260.0/M_PI*640.0)%886<<endl;
-            if(int(faiR*180.0/260.0/M_PI*640.0)%886 <640 && int(faiR*180.0/260.0/M_PI*640.0)%886>=0)
-            centers.ranges[int(faiR*180.0/260.0/M_PI*640.0)%886] = float(rouR);//最优解极径可正可负
+            if( int(faiR*180.0/260.0/M_PI*640.0)%886>=0){
+                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886] = float(rouR);//最优解极径可正可负
+                cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886<<endl;
+            }
+
+            else{
+                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886+886] = float(rouR);
+                cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886+886<<endl;
+            }
         }
         else{
-            cout<<"fai_int"<<(int(faiR*180.0/260.0/M_PI*640.0)+443)%886<<endl;
-            if((int(faiR*180.0/260.0/M_PI*640.0)+443)%886 <640 && int(int(faiR*180.0/260.0/M_PI*640.0)+443)%886>=0)
-            centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0)+443)%886] = -float(rouR);
+            if(int(int(faiR*180.0/260.0/M_PI*640.0)+443)%886>=0){
+                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0)+443)%886] = -float(rouR);
+                cout<<"<0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0)+443)%886<<endl;
+            }
+            else{
+                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0)+443)%886+886] = -float(rouR);
+                cout<<"<0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0)+443)%886+886<<endl;
+            }
         }
         //----------------ceres test---------------
     }
@@ -266,7 +279,7 @@ void scan_callback(const sensor_msgs::LaserScan::ConstPtr& scan)
         counter++;
     }
     cout<<"dataset_size: "<<dataset.size() << endl;
-    DBSCAN(dataset,0.02,5);
+    DBSCAN(dataset,0.02,10);
     scan_lock.unlock();
 }
 
