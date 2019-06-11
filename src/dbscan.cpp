@@ -203,15 +203,15 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
     //---------------remove little cluster----------
     for(int f = 0; f<data.size(); f++)
     {
-        if(data[f].size()<=10) data.erase(data.begin()+f);
+        if(data[f].size()< 10) data.erase(data.begin()+f);
     }
     //----------------------------------------------
 
     cout<<"cluster size:"<<data.size()<<endl;
     for(int j = 0; j < data.size() ;j ++){
         //----------------ceres test---------------
-        double rouR = 2.2689;
-        double faiR = 2.2689;
+        double faiR = data[j][0]/180.0*260.0*M_PI;
+        double rouR = data[j][1]*8.0;
         double r = 0.14;
 
         ceres::Problem problem;
@@ -229,15 +229,13 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         ceres::Solver::Summary summary;
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
-        //std::cout << "Initial rouR: " << 0.0 << " faiR: " << 0.0 << " r: " << 0.0 <<"\n";
         std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
-        if(rouR > 0){
-            if( int(faiR*180.0/260.0/M_PI*640.0)%886>=0){
-                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886] = float(rouR);//最优解极径可正可负
+        if(rouR > 0){//The rouR can be positive or negative
+            if( int(faiR*180.0/260.0/M_PI*640.0)%886>=0){//the faiR have a 2pi cycle. %886 for 2*pi
+                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886] = float(rouR);
                 cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886<<endl;
-            }
-
-            else{
+            }//However, the result after %886 can also be negative.
+            else{//If negative after %886, We + 886 after %886
                 centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886+886] = float(rouR);
                 cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886+886<<endl;
             }
@@ -279,7 +277,7 @@ void scan_callback(const sensor_msgs::LaserScan::ConstPtr& scan)
         counter++;
     }
     cout<<"dataset_size: "<<dataset.size() << endl;
-    DBSCAN(dataset,0.02,10);
+    DBSCAN(dataset,0.02,5);
     scan_lock.unlock();
 }
 
@@ -289,7 +287,7 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     ros::init(argc, argv, "dbscaner");
     ros::NodeHandle nh_;
-    circle_pub = nh_.advertise<sensor_msgs::LaserScan>("/scan2",1);
+    circle_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_pt",1);
     ros::Subscriber scan_sub = nh_.subscribe("/base_scan", 1, scan_callback);
     ros::spin();
     return 0;
