@@ -86,8 +86,8 @@ private:
 };
 
 ros::Publisher circle_pub;
-sensor_msgs::LaserScan centers ;
 
+sensor_msgs::LaserScan centers ;
 void DBSCAN(vector<point> dataset,float Eps,int MinPts){
     int len = dataset.size();
     //calculate pts
