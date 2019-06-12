@@ -114,7 +114,7 @@ add_subdirectory(/home/xcy/my_install/dlib-19.17/dlib dlib_build)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES dbscan sendgoal2 tree_tracker
+  LIBRARIES dbscan sendgoal2 localization
   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf tf_conversions
   DEPENDS system_lib
 )
@@ -157,10 +157,10 @@ target_link_libraries( sendgoal2 ${CERES_LIBRARIES} )
 target_link_libraries( sendgoal2 dlib::dlib )
 
 
-add_executable(tree_tracker src/tree_tracker.cpp)
-target_link_libraries( tree_tracker ${OpenCV_LIBS} )
-target_link_libraries( tree_tracker ${CERES_LIBRARIES} )
-target_link_libraries( tree_tracker dlib::dlib )
+add_executable(localization src/localization.cpp src/tree_tracker.cpp)
+target_link_libraries( localization ${OpenCV_LIBS} )
+target_link_libraries( localization ${CERES_LIBRARIES} )
+target_link_libraries( localization dlib::dlib )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -172,7 +172,7 @@ target_link_libraries( tree_tracker dlib::dlib )
 ## same as for the library above
  add_dependencies(dbscan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(sendgoal2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
- add_dependencies(tree_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(localization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
   target_link_libraries(dbscan
    ${catkin_LIBRARIES}
@@ -180,7 +180,7 @@ target_link_libraries( tree_tracker dlib::dlib )
   target_link_libraries(sendgoal2
    ${catkin_LIBRARIES}
  )
-  target_link_libraries(tree_tracker
+  target_link_libraries(localization
         ${catkin_LIBRARIES}
         )
 #############
