@@ -14,7 +14,7 @@ std::mutex tree_mtx;
 tree_tracker my_tree_tracker;
 
 sensor_msgs::LaserScan tree_followed;
-ros::Publisher follow_pub;
+ros::Publisher follow_pub; 
 
 void tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
 
