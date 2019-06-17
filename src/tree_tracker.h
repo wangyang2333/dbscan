@@ -41,6 +41,7 @@
 
 #include <dlib/svm_threaded.h>
 #include <dlib/optimization/max_cost_assignment.h>
+#include <tf/transform_listener.h>
 #ifndef SRC_TREE_TRACKER_H
 #define SRC_TREE_TRACKER_H
 
@@ -65,20 +66,37 @@ private:
     void tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan);
     ros::NodeHandle nh_;
     std::mutex tree_mtx;
-    sensor_msgs::LaserScan tree_followed;
-    ros::Publisher follow_pub;
-    ros::Subscriber scan_sub;
     bool first_track_flag;
-    std::vector<tree> this_track;
     std::vector<tree> this_trees;
+
+
+    sensor_msgs::LaserScan tree_followed;
+    sensor_msgs::PointCloud map_cloud;
+
+    ros::Publisher follow_pub;
+    ros::Publisher landmark_cloud_pub;
+    ros::Subscriber scan_sub;
+    tf::TransformListener listener;
+
     double norm_distance(tree ta, tree tb);
     void track_tree();
     int find_bad_tree(std::vector<tree> tree_more , std::vector<tree> tree_less);
+    void add_to_map(tree new_landmark);
+    void remove_from_map(tree landmark_to_remove);
+
 public:
+    std::vector<tree> this_track;
     tree_tracker(){
         first_track_flag = true;
         scan_sub = nh_.subscribe("/tree_pt", 1, &tree_tracker::tree_callback, this);
         follow_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_followed",1);
+        landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
+        sensor_msgs::PointCloud lanmark_cloud;
+        map_cloud.header.frame_id = "odom_combined";
+        map_cloud.channels.resize(1);
+        map_cloud.channels[0].name = "tree_id";
+        map_cloud.points.clear();
+        map_cloud.channels[0].values.clear();
     }
 };
 
