@@ -72,9 +72,11 @@ private:
 
     sensor_msgs::LaserScan tree_followed;
     sensor_msgs::PointCloud map_cloud;
+    geometry_msgs::PoseStamped pr2_pose;
 
     ros::Publisher follow_pub;
     ros::Publisher landmark_cloud_pub;
+    ros::Publisher pr2_pose_publisher;
     ros::Subscriber scan_sub;
     tf::TransformListener listener;
 
@@ -83,20 +85,32 @@ private:
     int find_bad_tree(std::vector<tree> tree_more , std::vector<tree> tree_less);
     void add_to_map(tree new_landmark);
     void remove_from_map(tree landmark_to_remove);
+    void change_frame(geometry_msgs::Point32 pt_in, string frame_in, geometry_msgs::Point32& pt_out, string frame_out);
+    void change_frame(tree tree_in, string frame_in, geometry_msgs::Point32& pt_out, string frame_out);
+    void localize();
+    double last_sita = 0.0;
+    tf::Transform my_transform;
+    tf::TransformBroadcaster my_br;
 
 public:
+    static double pts32_error(geometry_msgs::Point32 pts1, geometry_msgs::Point32 pts2);
     std::vector<tree> this_track;
     tree_tracker(){
         first_track_flag = true;
         scan_sub = nh_.subscribe("/tree_pt", 1, &tree_tracker::tree_callback, this);
         follow_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_followed",1);
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
+        pr2_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2",50);
         sensor_msgs::PointCloud lanmark_cloud;
         map_cloud.header.frame_id = "odom_combined";
         map_cloud.channels.resize(1);
         map_cloud.channels[0].name = "tree_id";
         map_cloud.points.clear();
         map_cloud.channels[0].values.clear();
+
+        my_transform.setOrigin(tf::Vector3(0,0,0));
+        my_transform.setRotation(tf::createQuaternionFromYaw(0));
+        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom_combined","case_link"));
     }
 };
 
