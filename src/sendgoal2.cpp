@@ -79,7 +79,7 @@ void scan2_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
 
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv){
     google::InitGoogleLogging(argv[0]);
     ros::init(argc, argv, "localization");
     ros::NodeHandle nh_;

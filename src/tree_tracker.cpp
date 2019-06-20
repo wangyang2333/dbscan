@@ -47,6 +47,7 @@ void tree_tracker::change_frame(tree tree_in, string frame_in, geometry_msgs::Po
     tree_point_stamped.point.z = 0;
 
     geometry_msgs::PointStamped base_point;
+    listener.waitForTransform(frame_in,frame_out,ros::Time(0),ros::Duration(3.0));
     listener.transformPoint(frame_out, tree_point_stamped, base_point);
 
     geometry_msgs::Point32 pcl_pt;
@@ -55,11 +56,10 @@ void tree_tracker::change_frame(tree tree_in, string frame_in, geometry_msgs::Po
     pt_out.z = base_point.point.z;
 }
 
-
 void tree_tracker::add_to_map(tree new_landmark){
     //add new tree to map_cloud
     geometry_msgs::Point32 pcl_pt;
-    change_frame(new_landmark,"base_laser_link",pcl_pt,"base_link");
+    change_frame(new_landmark,"case_laser_link",pcl_pt,"case_link");
     geometry_msgs::Point32 final_pt;
     change_frame(pcl_pt,"case_link",final_pt,"odom_combined");
 
@@ -120,6 +120,12 @@ void tree_tracker::track_tree(){
             this_track[assignment[i]].rou = this_trees[i].rou;
             printf("tracked tree id: %lf    rou: %lf   sita: %lf \n",this_track[assignment[i]].tree_id, this_track[assignment[i]].rou,this_track[assignment[i]].sita);
         }
+        if(this_track.size() >= 2){
+            localize();
+        }
+        else{
+            ROS_WARN("no enough trees in FOV!");
+        }
     }
     else if(this_trees.size()>this_track.size()){
         for(int i = 0 ; i < this_trees.size() - this_track.size() ; i++){
@@ -147,6 +153,7 @@ void tree_tracker::change_frame(geometry_msgs::Point32 pt_in, string frame_in, g
     pt_stamped_in.point.z = pt_in.z;
 
     geometry_msgs::PointStamped pt_stamped_out;
+    listener.waitForTransform(frame_in,frame_out,ros::Time(0),ros::Duration(3.0));
     listener.transformPoint(frame_out, pt_stamped_in, pt_stamped_out);
 
     pt_out.x = pt_stamped_out.point.x;
@@ -184,10 +191,10 @@ struct tree_Residual{
         cout<<"deltax!: "<<x_map*cos(sita[0]) + y_map*sin(sita[0]) - x[0] - x_track<<endl;
         cout<<"deltay!: "<<-x_map*sin(sita[0]) + y_map*cos(sita[0]) - y[0] - y_track<<endl;
 
-        residual[0]=(x_map*cos(sita[0]) + y_map*sin(sita[0]) - x[0] - x_track)*
-                (x_map*cos(sita[0]) + y_map*sin(sita[0]) - x[0] - x_track)+
-                (-x_map*sin(sita[0]) + y_map*cos(sita[0]) - y[0] - y_track)*
-                (-x_map*sin(sita[0]) + y_map*cos(sita[0]) - y[0] - y_track);
+        residual[0]=((x_map-x[0])*cos(sita[0]) + (y_map-y[0])*sin(sita[0]) - x_track)*
+                ((x_map-x[0])*cos(sita[0]) + (y_map-y[0])*sin(sita[0]) - x_track)+
+                (-(x_map-x[0])*sin(sita[0]) + (y_map-y[0])*cos(sita[0]) - y_track)*
+                (-(x_map-x[0])*sin(sita[0]) + (y_map-y[0])*cos(sita[0]) - y_track);
 
         return true;
     }
@@ -199,6 +206,7 @@ private:
 void tree_tracker::localize(){
     ceres::Problem problem;
     double x,y,sita;
+    // all use last local BA result for init
     x = double(pr2_pose.pose.position.x);
     y = double(pr2_pose.pose.position.y);
     sita = last_sita;
@@ -210,12 +218,11 @@ void tree_tracker::localize(){
         //change_frame(map_cloud.points[i],"odom_combined",temp_map_32,"base_link");// error! this is changing need to be compute in optimization;
         for(int j = 0; j < this_track.size(); j++){
             geometry_msgs::Point32 temp_track_32;
-            cout<<"I am here\n";
 
-            cout<<"id_track:"<<float(this_track[j].tree_id)<<endl;
-            cout<<"id_tree:"<<float(map_cloud.channels[0].values[i])<<endl;
             if(float(this_track[j].tree_id) == float(map_cloud.channels[0].values[i])){
-                change_frame(this_track[j],"base_laser_link",temp_track_32,"base_link");
+                cout<<"id_track:"<<float(this_track[j].tree_id)<<endl;
+                cout<<"id_tree:"<<float(map_cloud.channels[0].values[i])<<endl;
+                change_frame(this_track[j],"case_laser_link",temp_track_32,"case_link");
                 cout<<"map:"<<temp_map_32<<endl;
                 cout<<"track:"<<temp_track_32<<endl;
                 problem.AddResidualBlock(
@@ -223,22 +230,23 @@ void tree_tracker::localize(){
                                 new tree_Residual(temp_map_32,temp_track_32)),
                         NULL,
                         &x, &y, &sita);
-                continue;
+                break;
             }
         }
     }
     ceres::Solver::Options options;
     options.max_num_iterations = 100;
-    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.linear_solver_type = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     Solve(options, &problem, &summary);
     std::cout << summary.BriefReport() << "\n";
     std::cout << "Final   x: " << x << " y: " << y << " sita: " << sita <<"\n";
-    last_sita = sita;
+    last_sita = sita;//init for next local BA
 
+    //-----------------Publish local BA result------------------------------------
     pr2_pose.header.frame_id = "odom_combined";
-    pr2_pose.header.stamp = ros::Time();
+    pr2_pose.header.stamp = ros::Time::now();
     pr2_pose.pose.position.x = x;
     pr2_pose.pose.position.y = y;
     pr2_pose.pose.position.z = 0;
@@ -253,9 +261,8 @@ void tree_tracker::localize(){
 }
 
 void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
-
+    ROS_INFO("begin call back.");
     tree_mtx.lock();
-
     tree_followed.header.stamp=scan->header.stamp;
     tree_followed.header.frame_id=scan->header.frame_id;
     tree_followed.angle_min=scan->angle_min;
@@ -267,21 +274,35 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
     tree_followed.ranges.resize(1000);
     tree_followed.intensities.resize(1000);
 
-    RNG rng;
+    RNG rng((unsigned)time(NULL));
 
     this_trees.clear();
     for(int i = 0; i < scan->ranges.size(); i++)//push trees into vec
     {
         if(scan->ranges[i] != 0){
-            this_trees.push_back(tree(i/640.0, scan->ranges[i]/10.0,rng.uniform(0.f,1.f)));
+            this_trees.push_back(tree(i/640.0, scan->ranges[i]/10.0,rng.uniform(0.f,100.f)));
         }
     }
 
     if(first_track_flag)// handle first track
     {
+        ROS_INFO("begin first track.");
+        listener.waitForTransform("/base_link","/base_laser_link",ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform("/base_link", "/base_laser_link", ros::Time(0), laser_to_base);
+        listener.waitForTransform("/odom_combined","/base_link",ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform("/odom_combined", "/base_link", ros::Time(0), base_to_odom);
+        my_transform = base_to_odom;
+        my_transform2 = laser_to_base;
+        ROS_INFO("begin send initial tf.");
+
+        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom_combined","case_link"));
+        my_br.sendTransform(tf::StampedTransform(my_transform2,ros::Time::now(),"case_link","case_laser_link"));
+
+        ROS_INFO("end send initial tf");
         first_track_flag = false;
         this_track = this_trees;
 
+        cout<<"first track"<<endl;
         for(int i = 0; i < this_trees.size(); i++)
         {
             add_to_map(this_trees[i]);
@@ -303,12 +324,7 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
         cout<<"i am in else\n";
     }
     cout<<"i am in call back! \n";
-    if(this_track.size() >= 2){
-        localize();
-    }
-    else{
-        ROS_WARN("no enough trees in FOV!");
-    }
+    map_cloud.header.stamp = ros::Time::now();
     landmark_cloud_pub.publish(map_cloud);
     tree_mtx.unlock();
 }

@@ -42,6 +42,7 @@
 #include <dlib/svm_threaded.h>
 #include <dlib/optimization/max_cost_assignment.h>
 #include <tf/transform_listener.h>
+
 #ifndef SRC_TREE_TRACKER_H
 #define SRC_TREE_TRACKER_H
 
@@ -90,6 +91,9 @@ private:
     void localize();
     double last_sita = 0.0;
     tf::Transform my_transform;
+    tf::Transform my_transform2;
+    tf::StampedTransform laser_to_base;
+    tf::StampedTransform base_to_odom;
     tf::TransformBroadcaster my_br;
 
 public:
@@ -98,7 +102,7 @@ public:
     tree_tracker(){
         first_track_flag = true;
         scan_sub = nh_.subscribe("/tree_pt", 1, &tree_tracker::tree_callback, this);
-        follow_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_followed",1);
+        follow_pub = nh_.advertise<sensor_msgs::LaserScan>("tree_followed",1);
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
         pr2_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2",50);
         sensor_msgs::PointCloud lanmark_cloud;
@@ -108,9 +112,6 @@ public:
         map_cloud.points.clear();
         map_cloud.channels[0].values.clear();
 
-        my_transform.setOrigin(tf::Vector3(0,0,0));
-        my_transform.setRotation(tf::createQuaternionFromYaw(0));
-        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom_combined","case_link"));
     }
 };
 
