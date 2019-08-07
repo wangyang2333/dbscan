@@ -47,8 +47,8 @@ using namespace std;
 
 std::mutex scan_lock;
 
-double scan_num360 = 886.153846;
-double scan_range = 8.0;
+double scan_num360;
+double scan_range;
 
 
 
@@ -292,11 +292,18 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     ros::init(argc, argv, "dbscaner");
     ros::NodeHandle nh_;
-    nh_.getParam("/scan_range",scan_range);
-    nh_.getParam("/scan_num360",scan_num360);
+    string tree_pt,scan_name;
 
-    circle_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_pt",1);
-    ros::Subscriber scan_sub = nh_.subscribe("/base_scan", 1, scan_callback);
+    ros::param::get("~scan_range",scan_range);
+    ros::param::get("~scan_number_360",scan_num360);
+    ros::param::get("~tree_point",tree_pt);
+    ros::param::get("~scan_topic_name",scan_name);
+    cout<<"scan_range:"<<scan_range<<endl;
+    cout<<"scan_number_360:"<<scan_num360<<endl;
+    cout<<"tree_point:"<<tree_pt<<endl;
+    cout<<"scan_topic_name:"<<scan_name<<endl;
+    circle_pub = nh_.advertise<sensor_msgs::LaserScan>(tree_pt,1);
+    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 1, scan_callback);
     ros::spin();
     return 0;
 }

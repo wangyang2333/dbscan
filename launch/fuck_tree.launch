@@ -1,0 +1,12 @@
+<launch>
+  <node name="tree_cluster" pkg="dbscan" type="dbscan" output="screen">
+    <param name="scan_number_360" type="double" value="886.1"/>
+    <param name="scan_range" type="double" value="8.0"/>
+    <param name="tree_point" type="string" value="/tree_pt"/>
+    <param name="scan_topic_name" type="string" value="/base_scan"/>
+  </node>
+  
+  <!--node name="tree_localizer" pkg="dbscan" type="localization" /-->
+  
+  <!--node name="visualization" pkg="rviz" type="rviz"/-->
+</launch>
