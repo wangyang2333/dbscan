@@ -52,14 +52,14 @@ void scan2_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
 
     int int_left_tree, int_right_tree;
     for(int i = 0 ; i < 220;i++){//只在左右各220波束（总共左右各320波束）范围内取树
-        if(scan->ranges[320+i] > 0){
+        if(scan->ranges[405+i] > 0){
             int_left_tree = i;
             break;
         }
     }
 
     for(int i = 0 ; i < 220;i++){//只在左右各220波束（总共左右各320波束）范围内取树
-        if(scan->ranges[320-i] > 0){
+        if(scan->ranges[405-i] > 0){
             int_right_tree = i;
             break;
         }
@@ -69,9 +69,11 @@ void scan2_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
         geometry_msgs::PointStamped goal;
         goal.header.stamp = scan->header.stamp;
         goal.header.frame_id =scan->header.frame_id;
-        goal.point.x = (scan->ranges[320 + int_left_tree] * cos(int_left_tree/886.0*M_PI*2) + scan->ranges[320 - int_right_tree] * cos(int_right_tree/886.0*M_PI*2))/2.0 ;
-        goal.point.y = (scan->ranges[320 + int_left_tree] * sin(int_left_tree/886.0*M_PI*2) - scan->ranges[320 - int_right_tree] * sin(int_right_tree/886.0*M_PI*2))/2.0 ;
+        goal.point.x = (0.0*scan->ranges[405 + int_left_tree] * cos(int_left_tree/1080.0*M_PI*2) + scan->ranges[405 - int_right_tree] * cos(int_right_tree/1080.0*M_PI*2))/2.0*2.0 ;
+        goal.point.y = (0.0*scan->ranges[405 + int_left_tree] * sin(int_left_tree/1080.0*M_PI*2) - scan->ranges[405 - int_right_tree] * sin(int_right_tree/1080.0*M_PI*2))/2.0*2.0 ;
         goal.point.z = 0.0 ;
+
+
         goal_pub.publish(goal);
     }
 

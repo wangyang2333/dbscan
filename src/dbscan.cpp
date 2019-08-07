@@ -47,6 +47,9 @@ using namespace std;
 
 std::mutex scan_lock;
 
+double scan_num360 = 886.153846;
+double scan_range = 8.0;
+
 
 
 class point{
@@ -76,7 +79,7 @@ struct circleResidual {
     template <typename T> bool operator()(const T* const rouR,
                                           const T* const r,
                                           const T* const faiR,
-                                          T* residual) const {
+                                           T* residual) const {
         residual[0] = r[0]*r[0] - rouR[0]*rouR[0] - roui_*roui_ + 2.0 * rouR[0] * roui_ * cos(faiR[0]-sitai_);
         return true;
     }
@@ -210,15 +213,16 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
     cout<<"cluster size:"<<data.size()<<endl;
     for(int j = 0; j < data.size() ;j ++){
         //----------------ceres test---------------
-        double faiR = data[j][0]/180.0*260.0*M_PI;
-        double rouR = data[j][1]*8.0;
-        double r = 0.14;
+        double faiR = data[j][0]*2*M_PI;  //inverse normalization and transfer from deg. to rad.
+        double rouR = data[j][1]*scan_range;
+        double r = 0.2;
 
         ceres::Problem problem;
         for (int i = 0; i < data[j].size()/2; ++i) {
             problem.AddResidualBlock(
                     new ceres::AutoDiffCostFunction<circleResidual, 1, 1 , 1, 1>(
-                            new circleResidual(data[j][2 * i]/180.0*260.0*M_PI, data[j][2 * i + 1]*8.0)),
+                            new circleResidual(data[j][2 * i]*2*M_PI, data[j][2 * i + 1]*scan_range)),
+                            //inverse normalization and transfer from deg. to rad.
                     NULL,
                     &rouR, &r, &faiR);
         }
@@ -231,23 +235,23 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         std::cout << summary.BriefReport() << "\n";
         std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
         if(rouR > 0){//The rouR can be positive or negative
-            if( int(faiR*180.0/260.0/M_PI*640.0)%886>=0){//the faiR have a 2pi cycle. %886 for 2*pi
-                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886] = float(rouR);
-                cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886<<endl;
+            if( int(faiR/2.0/M_PI*scan_num360)%int(scan_num360)>=0){//the faiR have a 2pi cycle. %886 for 2*pi
+                centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)] = float(rouR);
+                cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)<<endl;
             }//However, the result after %886 can also be negative.
             else{//If negative after %886, We + 886 after %886
-                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0))%886+886] = float(rouR);
-                cout<<">0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0))%886+886<<endl;
+                centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)] = float(rouR);
+                cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)<<endl;
             }
         }
         else{
-            if(int(int(faiR*180.0/260.0/M_PI*640.0)+443)%886>=0){
-                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0)+443)%886] = -float(rouR);
-                cout<<"<0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0)+443)%886<<endl;
+            if(int(faiR/2/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)>=0){
+                centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)] = -float(rouR);
+                cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)<<endl;
             }
             else{
-                centers.ranges[(int(faiR*180.0/260.0/M_PI*640.0)+443)%886+886] = -float(rouR);
-                cout<<"<0's laser num: "<<(int(faiR*180.0/260.0/M_PI*640.0)+443)%886+886<<endl;
+                centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)] = -float(rouR);
+                cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)<<endl;
             }
         }
         //----------------ceres test---------------
@@ -271,7 +275,8 @@ void scan_callback(const sensor_msgs::LaserScan::ConstPtr& scan)
     int counter = 0;
     for(auto  scan_r:scan->ranges ){
         if(scan_r >= 0.2 && scan_r<=8.0){
-            point temp_pt = point(counter/640.0,scan_r/8.0,counter);
+            //normalize rou and sita to the ratio it occupies in full range.
+            point temp_pt = point(counter/scan_num360, scan_r/scan_range, counter);
             dataset.push_back(temp_pt);
         }
         counter++;
@@ -287,6 +292,9 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
     ros::init(argc, argv, "dbscaner");
     ros::NodeHandle nh_;
+    nh_.getParam("/scan_range",scan_range);
+    nh_.getParam("/scan_num360",scan_num360);
+
     circle_pub = nh_.advertise<sensor_msgs::LaserScan>("/tree_pt",1);
     ros::Subscriber scan_sub = nh_.subscribe("/base_scan", 1, scan_callback);
     ros::spin();

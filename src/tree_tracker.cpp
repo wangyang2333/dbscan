@@ -59,9 +59,9 @@ void tree_tracker::change_frame(tree tree_in, string frame_in, geometry_msgs::Po
 void tree_tracker::add_to_map(tree new_landmark){
     //add new tree to map_cloud
     geometry_msgs::Point32 pcl_pt;
-    change_frame(new_landmark,"case_laser_link",pcl_pt,"case_link");
+    change_frame(new_landmark,"laser",pcl_pt,"base_link");
     geometry_msgs::Point32 final_pt;
-    change_frame(pcl_pt,"case_link",final_pt,"odom_combined");
+    change_frame(pcl_pt,"base_link",final_pt,"odom");
 
     map_cloud.points.push_back(final_pt);
     map_cloud.channels[0].values.push_back(new_landmark.tree_id);
@@ -215,14 +215,14 @@ void tree_tracker::localize(){
     for(int i = 0; i < map_cloud.points.size(); i ++){
         geometry_msgs::Point32 temp_map_32;
         temp_map_32 = map_cloud.points[i];
-        //change_frame(map_cloud.points[i],"odom_combined",temp_map_32,"base_link");// error! this is changing need to be compute in optimization;
+        //change_frame(map_cloud.points[i],"odom",temp_map_32,"base_link");// error! this is changing need to be compute in optimization;
         for(int j = 0; j < this_track.size(); j++){
             geometry_msgs::Point32 temp_track_32;
 
             if(float(this_track[j].tree_id) == float(map_cloud.channels[0].values[i])){
                 cout<<"id_track:"<<float(this_track[j].tree_id)<<endl;
                 cout<<"id_tree:"<<float(map_cloud.channels[0].values[i])<<endl;
-                change_frame(this_track[j],"case_laser_link",temp_track_32,"case_link");
+                change_frame(this_track[j],"laser",temp_track_32,"base_link");
                 cout<<"map:"<<temp_map_32<<endl;
                 cout<<"track:"<<temp_track_32<<endl;
                 problem.AddResidualBlock(
@@ -245,7 +245,7 @@ void tree_tracker::localize(){
     last_sita = sita;//init for next local BA
 
     //-----------------Publish local BA result------------------------------------
-    pr2_pose.header.frame_id = "odom_combined";
+    pr2_pose.header.frame_id = "odom";
     pr2_pose.header.stamp = ros::Time::now();
     pr2_pose.pose.position.x = x;
     pr2_pose.pose.position.y = y;
@@ -254,9 +254,10 @@ void tree_tracker::localize(){
     tf::quaternionTFToMsg(tf::createQuaternionFromYaw(sita),pr2_pose.pose.orientation);
     pr2_pose_publisher.publish(pr2_pose);
 
+//tftftftftftf
     my_transform.setOrigin(tf::Vector3(x,y,0));
     my_transform.setRotation(tf::createQuaternionFromYaw(sita));
-    my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom_combined","case_link"));
+    my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom","base_link"));
 
 }
 
@@ -287,16 +288,17 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
     if(first_track_flag)// handle first track
     {
         ROS_INFO("begin first track.");
-        listener.waitForTransform("/base_link","/base_laser_link",ros::Time(0),ros::Duration(3.0));
-        listener.lookupTransform("/base_link", "/base_laser_link", ros::Time(0), laser_to_base);
-        listener.waitForTransform("/odom_combined","/base_link",ros::Time(0),ros::Duration(3.0));
-        listener.lookupTransform("/odom_combined", "/base_link", ros::Time(0), base_to_odom);
+        listener.waitForTransform("/base_link","/laser",ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform("/base_link", "/laser", ros::Time(0), laser_to_base);
+        listener.waitForTransform("/odom","/base_link",ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform("/odom", "/base_link", ros::Time(0), base_to_odom);
         my_transform = base_to_odom;
         my_transform2 = laser_to_base;
         ROS_INFO("begin send initial tf.");
 
-        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom_combined","case_link"));
-        my_br.sendTransform(tf::StampedTransform(my_transform2,ros::Time::now(),"case_link","case_laser_link"));
+//tftftftftftf
+        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom","base_link"));
+        my_br.sendTransform(tf::StampedTransform(my_transform2,ros::Time::now(),"base_link","laser"));
 
         ROS_INFO("end send initial tf");
         first_track_flag = false;

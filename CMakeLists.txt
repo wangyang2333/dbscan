@@ -118,7 +118,8 @@ catkin_package(
   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf tf_conversions
   DEPENDS system_lib
 )
-find_package(Ceres REQUIRED)
+
+find_package(Ceres REQUIRED PATHS "/home/xcy/catkin_ws/install_isolated/lib/cmake/Ceres")
 ###########
 ## Build ##
 ###########

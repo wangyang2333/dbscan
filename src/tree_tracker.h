@@ -104,9 +104,10 @@ public:
         scan_sub = nh_.subscribe("/tree_pt", 1, &tree_tracker::tree_callback, this);
         follow_pub = nh_.advertise<sensor_msgs::LaserScan>("tree_followed",1);
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
-        pr2_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2",50);
+        pr2_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2",10);
+        
         sensor_msgs::PointCloud lanmark_cloud;
-        map_cloud.header.frame_id = "odom_combined";
+        map_cloud.header.frame_id = "odom";
         map_cloud.channels.resize(1);
         map_cloud.channels[0].name = "tree_id";
         map_cloud.points.clear();
@@ -114,9 +115,6 @@ public:
 
     }
 };
-
-
-
 
 
 
