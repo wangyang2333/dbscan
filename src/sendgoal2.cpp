@@ -71,6 +71,9 @@ void scan2_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
         goal.header.frame_id =scan->header.frame_id;
         goal.point.x = (0.0*scan->ranges[405 + int_left_tree] * cos(int_left_tree/1080.0*M_PI*2) + scan->ranges[405 - int_right_tree] * cos(int_right_tree/1080.0*M_PI*2))/2.0*2.0 ;
         goal.point.y = (0.0*scan->ranges[405 + int_left_tree] * sin(int_left_tree/1080.0*M_PI*2) - scan->ranges[405 - int_right_tree] * sin(int_right_tree/1080.0*M_PI*2))/2.0*2.0 ;
+        //goal.point.x = (scan->ranges[405 + int_left_tree] * cos(int_left_tree/886.0*M_PI*2) + scan->ranges[405 - int_right_tree] * cos(int_right_tree/886.0*M_PI*2))/2.0 ;
+        //goal.point.y = (scan->ranges[405 + int_left_tree] * sin(int_left_tree/886.0*M_PI*2) - scan->ranges[405 - int_right_tree] * sin(int_right_tree/886.0*M_PI*2))/2.0 ;
+
         goal.point.z = 0.0 ;
 
 
