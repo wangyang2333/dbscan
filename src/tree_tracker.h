@@ -6,6 +6,7 @@
 #include <ros/forwards.h>
 #include <sensor_msgs/Image.h>
 
+
 #include <tf/transform_broadcaster.h>
 #include <tf_conversions/tf_eigen.h>
 #include <opencv2/opencv.hpp>
@@ -101,6 +102,10 @@ public:
     string base_link_name;
     string odom_name;
     string map_name;
+    double scan_num360;
+    double half_laser_num;
+    double laser_num;
+    
     static double pts32_error(geometry_msgs::Point32 pts1, geometry_msgs::Point32 pts2);
     std::vector<tree> this_track;
     tree_tracker(){
@@ -108,6 +113,9 @@ public:
         ros::param::get("~base_link_name",base_link_name);
         ros::param::get("~odom_name",odom_name);
         ros::param::get("~map_name",map_name);
+        ros::param::get("~scan_number_360",scan_num360);
+        ros::param::get("~half_laser_num",half_laser_num);
+        ros::param::get("~laser_num",laser_num);
         first_track_flag = true;
         scan_sub = nh_.subscribe("/tree_pt", 1, &tree_tracker::tree_callback, this);
         follow_pub = nh_.advertise<sensor_msgs::LaserScan>("tree_followed",1);

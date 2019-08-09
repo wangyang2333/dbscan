@@ -9,6 +9,7 @@
  */
 
 
+
 double tree_tracker::norm_distance(tree ta, tree tb){
     return (abs(ta.sita - tb.sita) + abs(ta.rou - tb.rou));
 }
@@ -42,8 +43,8 @@ void tree_tracker::change_frame(tree tree_in, string frame_in, geometry_msgs::Po
     tree_point_stamped.header.frame_id = frame_in;
     tree_point_stamped.header.stamp = ros::Time();
 
-    tree_point_stamped.point.x = tree_in.rou * 10.0 * cos((tree_in.sita*640.0-320.0)/886.0*M_PI*2.0);
-    tree_point_stamped.point.y = tree_in.rou * 10.0 * sin((tree_in.sita*640.0-320.0)/886.0*M_PI*2.0);
+    tree_point_stamped.point.x = tree_in.rou * 10.0 * cos((tree_in.sita*laser_num-half_laser_num)/scan_num360*M_PI*2.0);
+    tree_point_stamped.point.y = tree_in.rou * 10.0 * sin((tree_in.sita*laser_num-half_laser_num)/scan_num360*M_PI*2.0);
     tree_point_stamped.point.z = 0;
 
     geometry_msgs::PointStamped base_point;
@@ -279,7 +280,7 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
     for(int i = 0; i < scan->ranges.size(); i++)//push trees into vec
     {
         if(scan->ranges[i] != 0){
-            this_trees.push_back(tree(i/640.0, scan->ranges[i]/10.0,rng.uniform(0.f,100.f)));
+            this_trees.push_back(tree(i/laser_num, scan->ranges[i]/10.0,rng.uniform(0.f,100.f)));
         }
     }
 
@@ -288,9 +289,10 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
         ROS_INFO("begin first track.");
         listener.waitForTransform(base_link_name,laser_name,ros::Time(0),ros::Duration(3.0));
         listener.lookupTransform(base_link_name, laser_name, ros::Time(0), laser_to_base);
-        listener.waitForTransform(map_name,base_link_name,ros::Time(0),ros::Duration(3.0));
-        listener.lookupTransform(map_name, base_link_name, ros::Time(0), base_to_odom);
-        my_transform = base_to_odom;
+        //listener.waitForTransform(map_name,base_link_name,ros::Time(0),ros::Duration(3.0));
+        //listener.lookupTransform(map_name, base_link_name, ros::Time(0), base_to_odom);
+        my_transform = laser_to_base;
+        my_transform.setOrigin(tf::Vector3(0,0,0));
         my_transform2 = laser_to_base;
         ROS_INFO("begin send initial tf.");
 
@@ -314,8 +316,8 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
         track_tree();
         cout<<"load scan ....."<<endl;
         for(int i = 0; i< this_track.size(); i++){
-            tree_followed.ranges[int(this_track[i].sita*640)] = this_track[i].rou*10;
-            tree_followed.intensities[int(this_track[i].sita*640)] =this_track[i].tree_id;
+            tree_followed.ranges[int(this_track[i].sita*laser_num)] = this_track[i].rou*10.0;
+            tree_followed.intensities[int(this_track[i].sita*laser_num)] =this_track[i].tree_id;
         }
         follow_pub.publish(tree_followed);
         tree_followed.ranges.clear();

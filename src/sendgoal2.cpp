@@ -2,6 +2,7 @@
  *if tf in rviz can't display, run a roscore first.
  */
 
+
 #include <queue>
 #include <sensor_msgs/Imu.h>
 #include <ros/forwards.h>
@@ -53,7 +54,7 @@ int half_laser_num;
 
 
 void scan2_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
-    ROS_ERROR("half: %d",half_laser_num);
+    //ROS_ERROR("half: %d",half_laser_num);
     cout<<half_laser_num<<endl;
     int int_left_tree, int_right_tree;
     for(int i = 0 ; i < 220;i++){//只在左右各220波束（总共左右各half_laser_num波束）范围内取树
