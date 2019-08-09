@@ -113,7 +113,6 @@ add_subdirectory(/home/xcy/my_install/dlib-19.17/dlib dlib_build)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
   LIBRARIES dbscan sendgoal2 tree_tracker
   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf tf_conversions
   DEPENDS system_lib

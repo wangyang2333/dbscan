@@ -11,12 +11,12 @@
     <param name="half_laser_num" type="int" value="405">
   </node>
 
-    <node name="localizer" pkg="dbscan" type="localization">
-      <param name="laser_name" type="string" value="/laser"/>
-      <param name="base_link_name" type="string" value="/base_link"/>
-      <param name="odom_name" type="string" value="/odom"/>
-      <param name="map_name" type="string" value="/map"/>
-    </node>
+  <node name="localizer" pkg="dbscan" type="localization">
+    <param name="laser_name" type="string" value="/laser"/>
+    <param name="base_link_name" type="string" value="/base_link"/>
+    <param name="odom_name" type="string" value="/odom"/>
+    <param name="map_name" type="string" value="/map"/>
+  </node>
   
   <!--node name="visualization" pkg="rviz" type="rviz"/-->
 </launch>
