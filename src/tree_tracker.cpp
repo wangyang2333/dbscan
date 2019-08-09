@@ -59,9 +59,9 @@ void tree_tracker::change_frame(tree tree_in, string frame_in, geometry_msgs::Po
 void tree_tracker::add_to_map(tree new_landmark){
     //add new tree to map_cloud
     geometry_msgs::Point32 pcl_pt;
-    change_frame(new_landmark,"laser",pcl_pt,"base_link");
+    change_frame(new_landmark,laser_name,pcl_pt,base_link_name);
     geometry_msgs::Point32 final_pt;
-    change_frame(pcl_pt,"base_link",final_pt,"odom");
+    change_frame(pcl_pt,base_link_name,final_pt,map_name);
 
     map_cloud.points.push_back(final_pt);
     map_cloud.channels[0].values.push_back(new_landmark.tree_id);
@@ -222,7 +222,7 @@ void tree_tracker::localize(){
             if(float(this_track[j].tree_id) == float(map_cloud.channels[0].values[i])){
                 cout<<"id_track:"<<float(this_track[j].tree_id)<<endl;
                 cout<<"id_tree:"<<float(map_cloud.channels[0].values[i])<<endl;
-                change_frame(this_track[j],"laser",temp_track_32,"base_link");
+                change_frame(this_track[j],laser_name,temp_track_32,base_link_name);
                 cout<<"map:"<<temp_map_32<<endl;
                 cout<<"track:"<<temp_track_32<<endl;
                 problem.AddResidualBlock(
@@ -245,7 +245,7 @@ void tree_tracker::localize(){
     last_sita = sita;//init for next local BA
 
     //-----------------Publish local BA result------------------------------------
-    pr2_pose.header.frame_id = "odom";
+    pr2_pose.header.frame_id = map_name;
     pr2_pose.header.stamp = ros::Time::now();
     pr2_pose.pose.position.x = x;
     pr2_pose.pose.position.y = y;
@@ -253,11 +253,9 @@ void tree_tracker::localize(){
 
     tf::quaternionTFToMsg(tf::createQuaternionFromYaw(sita),pr2_pose.pose.orientation);
     pr2_pose_publisher.publish(pr2_pose);
-
-//tftftftftftf
     my_transform.setOrigin(tf::Vector3(x,y,0));
     my_transform.setRotation(tf::createQuaternionFromYaw(sita));
-    my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom","base_link"));
+    my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),map_name,base_link_name));
 
 }
 
@@ -288,17 +286,16 @@ void tree_tracker::tree_callback(const sensor_msgs::LaserScan::ConstPtr& scan){
     if(first_track_flag)// handle first track
     {
         ROS_INFO("begin first track.");
-        listener.waitForTransform("/base_link","/laser",ros::Time(0),ros::Duration(3.0));
-        listener.lookupTransform("/base_link", "/laser", ros::Time(0), laser_to_base);
-        listener.waitForTransform("/odom","/base_link",ros::Time(0),ros::Duration(3.0));
-        listener.lookupTransform("/odom", "/base_link", ros::Time(0), base_to_odom);
+        listener.waitForTransform(base_link_name,laser_name,ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform(base_link_name, laser_name, ros::Time(0), laser_to_base);
+        listener.waitForTransform(map_name,base_link_name,ros::Time(0),ros::Duration(3.0));
+        listener.lookupTransform(map_name, base_link_name, ros::Time(0), base_to_odom);
         my_transform = base_to_odom;
         my_transform2 = laser_to_base;
         ROS_INFO("begin send initial tf.");
 
-//tftftftftftf
-        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),"odom","base_link"));
-        my_br.sendTransform(tf::StampedTransform(my_transform2,ros::Time::now(),"base_link","laser"));
+        my_br.sendTransform(tf::StampedTransform(my_transform,ros::Time::now(),map_name,base_link_name));
+        my_br.sendTransform(tf::StampedTransform(my_transform2,ros::Time::now(),base_link_name,laser_name));
 
         ROS_INFO("end send initial tf");
         first_track_flag = false;
