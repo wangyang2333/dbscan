@@ -48,7 +48,7 @@ using namespace std;
 ros::Publisher goal_pub;
 
 double scan_num360;
-int half_laser_num
+int half_laser_num;
 
 
 
