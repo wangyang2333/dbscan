@@ -236,24 +236,26 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
         std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
-        if(rouR > 0){//The rouR can be positive or negative
-            if( int(faiR/2.0/M_PI*scan_num360)%int(scan_num360)>=0){//the faiR have a 2pi cycle. %886 for 2*pi
-                centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)] = float(rouR);
-                cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)<<endl;
-            }//However, the result after %886 can also be negative.
-            else{//If negative after %886, We + 886 after %886
-                centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)] = float(rouR);
-                cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)<<endl;
-            }
-        }
-        else{
-            if(int(faiR/2/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)>=0){
-                centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)] = -float(rouR);
-                cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)<<endl;
+        if(r>=0.1&&r<=0.2){
+            if(rouR > 0){//The rouR can be positive or negative
+                if( int(faiR/2.0/M_PI*scan_num360)%int(scan_num360)>=0){//the faiR have a 2pi cycle. %886 for 2*pi
+                    centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)] = float(rouR);
+                    cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)<<endl;
+                }//However, the result after %886 can also be negative.
+                else{//If negative after %886, We + 886 after %886
+                    centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)] = float(rouR);
+                    cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)<<endl;
+                }
             }
             else{
-                centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)] = -float(rouR);
-                cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)<<endl;
+                if(int(faiR/2/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)>=0){
+                    centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)] = -float(rouR);
+                    cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)<<endl;
+                }
+                else{
+                    centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)] = -float(rouR);
+                    cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)<<endl;
+                }
             }
         }
         //----------------ceres test---------------
