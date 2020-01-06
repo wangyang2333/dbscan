@@ -22,7 +22,7 @@ FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 include_directories( "/usr/include/eigen3" )
 
-add_subdirectory(/home/xcy/my_install/dlib-19.17/dlib dlib_build)
+add_subdirectory(/home/xcy/my_install/dlib/dlib dlib_build)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 

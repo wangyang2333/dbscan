@@ -1,0 +1,21 @@
+cd ~/catkin_ws/src
+git clone https://github.com/CyderN/dbscan.git
+sudo apt-get install liblapack-dev libsuitesparse-dev libcxsparse3.1.4 libgflags-dev libgoogle-glog-dev libgtest-dev
+git clone https://github.com/ceres-solver/ceres-solver.git
+cd ceres-solver
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+cd ~/catkin_ws/src
+git clone https://github.com/davisking/dlib.git
+cd dlib
+mkdir build 
+cd build
+cmake ..
+make
+cd ~/catkin_ws
+catkin_make --pkg dbscan
+cd src
+rm -rf ceres_solver
