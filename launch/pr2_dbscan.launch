@@ -1,0 +1,25 @@
+<launch>
+  <node name="tree_cluster" pkg="dbscan" type="dbscan">
+    <param name="scan_number_360" type="double" value="886.0"/>
+    <param name="scan_range" type="double" value="8.0"/>
+    <param name="tree_point" type="string" value="/tree_pt"/>
+    <param name="scan_topic_name" type="string" value="base_scan"/>
+  </node>
+  
+  <node name="goal_sender" pkg="dbscan" type="sendgoal2">
+    <param name="scan_number_360" type="double" value="886.0"/>
+    <param name="half_laser_num" type="int" value="320"/>
+  </node>
+
+  <node name="localizer" pkg="dbscan" type="localization" output="screen">
+    <param name="scan_number_360" type="double" value="886.0"/>
+    <param name="half_laser_num" type="double" value="320.0"/>
+    <param name="laser_num" type="double" value="640.0"/>
+    <param name="laser_name" type="string" value="/base_laser_link"/>
+    <param name="base_link_name" type="string" value="/base_link"/>
+    <param name="odom_name" type="string" value="/odom_combined"/>
+    <param name="map_name" type="string" value="/odom_combined"/>
+  </node>
+  
+  <!--node name="visualization" pkg="rviz" type="rviz"/-->
+</launch>
