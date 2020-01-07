@@ -1,9 +1,14 @@
 <launch>
-  <node name="tree_cluster" pkg="dbscan" type="dbscan">
+  <node name="tree_cluster" pkg="dbscan" type="dbscan" output="screen">
     <param name="scan_number_360" type="double" value="886.0"/>
     <param name="scan_range" type="double" value="8.0"/>
     <param name="tree_point" type="string" value="/tree_pt"/>
     <param name="scan_topic_name" type="string" value="base_scan"/>
+    <param name="EPS" type="double" value="0.02"/>
+    <param name="MinPts" type="int" value="5"/>
+    <param name="tree_residual" type="double" value="0.0001"/>
+    <param name="tree_radius_max" type="double" value="0.2"/>
+    <param name="tree_radius_min" type="double" value="0.1"/>
   </node>
   
   <node name="goal_sender" pkg="dbscan" type="sendgoal2">

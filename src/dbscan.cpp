@@ -52,6 +52,8 @@ std::mutex scan_lock;
 double scan_num360;
 double scan_range;
 
+int MinPts;
+double EPS, tree_residual, tree_radius_max, tree_radius_min;
 
 
 class point{
@@ -93,7 +95,7 @@ private:
 ros::Publisher circle_pub;
 
 sensor_msgs::LaserScan centers ;
-void DBSCAN(vector<point> dataset,float Eps,int MinPts){
+void DBSCAN(vector<point> dataset,double Eps,int MinPts){
     int len = dataset.size();
     //calculate pts
     cout<<"calculate pts"<<endl;
@@ -236,7 +238,7 @@ void DBSCAN(vector<point> dataset,float Eps,int MinPts){
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
         std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
-        if(r>=0.1&&r<=0.2){
+        if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){//control the radius
             if(rouR > 0){//The rouR can be positive or negative
                 if( int(faiR/2.0/M_PI*scan_num360)%int(scan_num360)>=0){//the faiR have a 2pi cycle. %886 for 2*pi
                     centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)] = float(rouR);
@@ -286,7 +288,8 @@ void scan_callback(const sensor_msgs::LaserScan::ConstPtr& scan)
         counter++;
     }
     cout<<"dataset_size: "<<dataset.size() << endl;
-    DBSCAN(dataset,0.02,5);
+    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+    DBSCAN(dataset,EPS,MinPts);
     scan_lock.unlock();
 }
 
@@ -302,6 +305,14 @@ int main(int argc, char** argv) {
     ros::param::get("~scan_number_360",scan_num360);
     ros::param::get("~tree_point",tree_pt);
     ros::param::get("~scan_topic_name",scan_name);
+
+    ros::param::get("~EPS",EPS);
+    ros::param::get("~MinPts",MinPts);
+    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+    ros::param::get("~tree_residual",tree_residual);
+    ros::param::get("~tree_radius_max",tree_radius_max);
+    ros::param::get("~tree_radius_min",tree_radius_min);
+
     cout<<"scan_range:"<<scan_range<<endl;
     cout<<"scan_number_360:"<<scan_num360<<endl;
     cout<<"tree_point:"<<tree_pt<<endl;
