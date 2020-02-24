@@ -1,0 +1,32 @@
+<launch>
+  <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" >
+    <param name="scan_number_360" type="double" value="1080.0"/>
+    <param name="scan_range" type="double" value="8.0"/>
+    <param name="tree_point" type="string" value="/tree_pt"/>
+    <param name="scan_topic_name" type="string" value="/velodyne_points
+"/>
+
+    <param name="EPS" type="double" value="0.02"/>
+    <param name="MinPts" type="int" value="5"/>
+    <param name="tree_residual" type="double" value="0.0001"/>
+    <param name="tree_radius_max" type="double" value="0.2"/>
+    <param name="tree_radius_min" type="double" value="0.1"/>
+  </node>
+  
+  <node name="goal_sender" pkg="dbscan" type="sendgoal2">
+    <param name="scan_number_360" type="double" value="1080.0"/>
+    <param name="half_laser_num" type="int" value="405"/>
+  </node>
+
+  <node name="localizer" pkg="dbscan" type="localization" output="screen">
+    <param name="scan_number_360" type="double" value="1080.0"/>
+    <param name="half_laser_num" type="double" value="405.0"/>
+    <param name="laser_num" type="double" value="810.0"/>
+    <param name="laser_name" type="string" value="/laser"/>
+    <param name="base_link_name" type="string" value="/base_link"/>
+    <param name="odom_name" type="string" value="/odom"/>
+    <param name="map_name" type="string" value="/map"/>
+  </node>
+  
+  <!--node name="visualization" pkg="rviz" type="rviz"/-->
+</launch>

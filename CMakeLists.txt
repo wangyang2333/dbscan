@@ -150,6 +150,11 @@ target_link_libraries( dbscan ${OpenCV_LIBS} )
 target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
+add_executable(dbscan3d src/dbscan3d.cpp)
+target_link_libraries( dbscan3d ${OpenCV_LIBS} )
+target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
+target_link_libraries( dbscan3d dlib::dlib )
+
 
 add_executable(sendgoal2 src/sendgoal2.cpp)
 target_link_libraries( sendgoal2 ${OpenCV_LIBS} )
@@ -174,12 +179,18 @@ target_link_libraries(localization tree_tracker)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
  add_dependencies(dbscan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(dbscan3d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(sendgoal2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(tree_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
   target_link_libraries(dbscan
    ${catkin_LIBRARIES}
  )
+
+  target_link_libraries(dbscan3d
+   ${catkin_LIBRARIES}
+  )
+
   target_link_libraries(sendgoal2
    ${catkin_LIBRARIES}
  )
