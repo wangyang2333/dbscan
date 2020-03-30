@@ -93,30 +93,31 @@ public:
 };
 
 float squareDistance(point a,point b){
-	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z));
+	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 }
 
 struct circleResidual {
-    circleResidual(double sitai, double roui)
-            : sitai_(sitai),roui_(roui) {}
-    template <typename T> bool operator()(const T* const rouR,
+    circleResidual(double xi, double yi)
+            : xi_(xi),yi_(yi) {}
+    template <typename T> bool operator()(const T* const x,
+                                          const T* const y,
                                           const T* const r,
-                                          const T* const faiR,
                                            T* residual) const {
-        residual[0] = r[0]*r[0] - rouR[0]*rouR[0] - roui_*roui_ + 2.0 * rouR[0] * roui_ * cos(faiR[0]-sitai_);
+        residual[0] = r[0]*r[0] - (x[0]-xi_)*(x[0]-xi_) - (y[0]-yi_)*(y[0]-yi_);//TODO
         return true;
     }
 private:
-    const double sitai_;
-    const double roui_;
+    const double xi_;
+    const double yi_;
 };
 
 
-
+ros::Publisher cloud_pub;
+ros::Publisher tree_cloud_pub;
 ros::Publisher circle_pub;
 
 sensor_msgs::LaserScan centers ;
-void DBSCAN(vector<point> dataset,double Eps,int MinPts){//TODO:
+void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
     int len = dataset.size();
     //calculate pts
     cout<<"calculate pts"<<endl;
@@ -236,6 +237,63 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//TODO:
     //----------------------------------------------
 
     cout<<"cluster size:"<<data.size()<<endl;
+
+    //三维地卡尔坐标系中的ceres优化树心轴。
+    //对每个cluster进行优化的for
+    std::vector<Point3f> temp_tree_pt;
+    for(int j = 0; j < data.size() ;j ++) {
+        //----------------ceres test---------------
+
+        //优化初始值把类中第一个点的位置复制给他
+        double x = data[j][0];
+        double y = data[j][1];
+        double r = 0.15;
+
+        ceres::Problem problem;
+        for (int i = 0; i < data[j].size() / 2; ++i) {
+            problem.AddResidualBlock(
+                    new ceres::AutoDiffCostFunction<circleResidual, 1, 1, 1, 1>(
+                            new circleResidual(data[j][2 * i], data[j][2 * i + 1])),
+                    //inverse normalization and transfer from deg. to rad.
+                    NULL,
+                    &x, &y, &r);
+        }
+        //solve the problem
+        ceres::Solver::Options options;
+        options.max_num_iterations = 100;
+        options.linear_solver_type = ceres::DENSE_QR;
+        options.minimizer_progress_to_stdout = true;
+        ceres::Solver::Summary summary;
+        Solve(options, &problem, &summary);
+        std::cout << summary.BriefReport() << "\n";
+        std::cout << "Final   x: " << x << " y: " << y << " r: " << r <<"\n";
+        //push the result to output vector
+        Point3f temp3d(x, y, r);
+        temp_tree_pt.push_back(temp3d);
+    }
+
+
+
+    sensor_msgs::PointCloud tree_cloud;
+    tree_cloud.header.frame_id = "velodyne";
+    tree_cloud.points.resize(temp_tree_pt.size());
+    tree_cloud.channels.resize(1);
+    tree_cloud.channels[0].name = "intensities";
+    tree_cloud.channels[0].values.resize(temp_tree_pt.size());
+    int count = 0;
+    for(auto gdlmk : temp_tree_pt)
+    {
+        tree_cloud.points[count].x = gdlmk.x;
+        tree_cloud.points[count].y = gdlmk.y;
+        tree_cloud.points[count].z = gdlmk.z;
+        tree_cloud.channels[0].values[count] = count;
+        count++;
+    }
+    tree_cloud_pub.publish(tree_cloud);
+
+
+
+    /*
     for(int j = 0; j < data.size() ;j ++){
         //----------------ceres test---------------
         double faiR = data[j][0]*2*M_PI;  //inverse normalization and transfer from deg. to rad.
@@ -284,11 +342,13 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//TODO:
         //----------------ceres test---------------
     }
     circle_pub.publish(centers);
+
+    */
 }
 
 
 //test
-ros::Publisher cloud_pub;
+
 
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 {
@@ -371,6 +431,8 @@ int main(int argc, char** argv) {
 
     //test
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 1);
+    tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud1", 1);
+
 
 
     ros::spin();
