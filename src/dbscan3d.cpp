@@ -64,6 +64,12 @@ std::mutex scan_lock;
 
 double scan_num360;
 double scan_range;
+double min_cluster;
+
+double distance_max;
+double distance_min;
+double height_max;
+double height_min;
 
 int MinPts;
 double EPS, tree_residual, tree_radius_max, tree_radius_min;
@@ -218,24 +224,37 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         data.push_back(temp_vec);
     }
 
-	//output
-    for(int i=0;i<len;i++){
-        if(dataset[i].pointType == 2)
-            cout<<"border:"<<dataset[i].x<<","<<dataset[i].y<<","<<dataset[i].cluster<<"\n";
-    }
-    for(int i=0;i<corePoint.size();i++){
-        cout<<"core:"<<corePoint[i].x<<","<<corePoint[i].y<<","<<corePoint[i].cluster<<"\n";
-    }
-    centers.ranges.clear();
-    centers.ranges.resize(1000);
-
     //---------------remove little cluster----------//TODO: change the size of dbscan
     for(int f = 0; f<data.size(); f++)
     {
-        if(data[f].size()< 10) data.erase(data.begin()+f);
+        if(data[f].size()< min_cluster){
+            cout<<"Do erase a cluster with "<<data[f].size()<<" elements\n";
+            data.erase(data.begin()+f);
+            f--;
+        }
+
+
     }
     //----------------------------------------------
 
+    //New output:
+    for(int i=0; i<data.size(); i++){
+        for(int j=0; j<data[i].size(); j++){
+            cout<<"pts: "<<data[i][2*j]<<","<<data[i][2*j+1]<<","<<i<<"\n";
+        }
+    }
+
+
+//	//output
+//    for(int i=0;i<len;i++){
+//        if(dataset[i].pointType == 2)
+//            cout<<"border:"<<dataset[i].x<<","<<dataset[i].y<<","<<dataset[i].cluster<<"\n";
+//    }
+//    for(int i=0;i<corePoint.size();i++){
+//        cout<<"core:"<<corePoint[i].x<<","<<corePoint[i].y<<","<<corePoint[i].cluster<<"\n";
+//    }
+    centers.ranges.clear();
+    centers.ranges.resize(1000);
     cout<<"cluster size:"<<data.size()<<endl;
 
     //三维地卡尔坐标系中的ceres优化树心轴。
@@ -266,10 +285,15 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         ceres::Solver::Summary summary;
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
-        std::cout << "Final   x: " << x << " y: " << y << " r: " << r <<"\n";
+        r= abs(r);
+        std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<"\n";
         //push the result to output vector
         Point3f temp3d(x, y, r);
-        temp_tree_pt.push_back(temp3d);
+        if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){
+            temp_tree_pt.push_back(temp3d);
+            std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
+        }
+
     }
 
 
@@ -358,10 +382,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     cloud_pub.publish(output);
 
     //Convert sensor_msgs::PointCloud to my_own::point
-    double distance_max = 10.0;
-    double distance_min = 0.3;
-    double height_max = 1.8;
-    double height_min = 0.4;
     int counter = 0;
     std::vector<point> dataset;
     for(auto pt_iter : output.points){
@@ -421,6 +441,13 @@ int main(int argc, char** argv) {
     ros::param::get("~tree_residual",tree_residual);
     ros::param::get("~tree_radius_max",tree_radius_max);
     ros::param::get("~tree_radius_min",tree_radius_min);
+
+    ros::param::get("~min_cluster",min_cluster);
+    ros::param::get("~distance_max",distance_max);
+    ros::param::get("~distance_min",distance_min);
+    ros::param::get("~height_max",height_max);
+    ros::param::get("~height_min",height_min);
+
 
     cout<<"scan_range:"<<scan_range<<endl;
     cout<<"scan_number_360:"<<scan_num360<<endl;
