@@ -99,7 +99,7 @@ public:
 };
 
 float squareDistance(point a,point b){
-	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z));
 }
 
 struct circleResidual {
@@ -185,7 +185,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
 
 
 
-	//-------------------number data-----------------//
+	//Number Each Data
 	int temp_cluster = 1;
     if(!corePoint.empty()){
         for(int i=0;i<corePoint.size()-1 ;i++){
@@ -201,7 +201,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         corePoint[corePoint.size()-1].cluster = temp_cluster;
     }
 
-    //-----------push data---------------------//
+    //Push Data Into Cluster//
     vector<vector<double>> data;
     vector<double> temp_vec;
     if(!corePoint.empty()){
@@ -224,7 +224,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         data.push_back(temp_vec);
     }
 
-    //---------------remove little cluster----------//TODO: change the size of dbscan
+    //remove little cluster
     for(int f = 0; f<data.size(); f++)
     {
         if(data[f].size()< min_cluster){
@@ -235,7 +235,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
 
 
     }
-    //----------------------------------------------
+
 
     //New output:
     for(int i=0; i<data.size(); i++){
@@ -243,16 +243,6 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
             cout<<"pts: "<<data[i][2*j]<<","<<data[i][2*j+1]<<","<<i<<"\n";
         }
     }
-
-
-//	//output
-//    for(int i=0;i<len;i++){
-//        if(dataset[i].pointType == 2)
-//            cout<<"border:"<<dataset[i].x<<","<<dataset[i].y<<","<<dataset[i].cluster<<"\n";
-//    }
-//    for(int i=0;i<corePoint.size();i++){
-//        cout<<"core:"<<corePoint[i].x<<","<<corePoint[i].y<<","<<corePoint[i].cluster<<"\n";
-//    }
     centers.ranges.clear();
     centers.ranges.resize(1000);
     cout<<"cluster size:"<<data.size()<<endl;
@@ -314,60 +304,6 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         count++;
     }
     tree_cloud_pub.publish(tree_cloud);
-
-
-
-    /*
-    for(int j = 0; j < data.size() ;j ++){
-        //----------------ceres test---------------
-        double faiR = data[j][0]*2*M_PI;  //inverse normalization and transfer from deg. to rad.
-        double rouR = data[j][1]*scan_range;
-        double r = 0.2;
-
-        ceres::Problem problem;
-        for (int i = 0; i < data[j].size()/2; ++i) {
-            problem.AddResidualBlock(
-                    new ceres::AutoDiffCostFunction<circleResidual, 1, 1 , 1, 1>(
-                            new circleResidual(data[j][2 * i]*2*M_PI, data[j][2 * i + 1]*scan_range)),
-                            //inverse normalization and transfer from deg. to rad.
-                    NULL,
-                    &rouR, &r, &faiR);
-        }
-        ceres::Solver::Options options;
-        options.max_num_iterations = 100;
-        options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = true;
-        ceres::Solver::Summary summary;
-        Solve(options, &problem, &summary);
-        std::cout << summary.BriefReport() << "\n";
-        std::cout << "Final   rouR: " << abs(rouR) << " faiR: " << faiR << " r: " << r <<"\n";
-        if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){//control the radius
-            if(rouR > 0){//The rouR can be positive or negative
-                if( int(faiR/2.0/M_PI*scan_num360)%int(scan_num360)>=0){//the faiR have a 2pi cycle. %886 for 2*pi
-                    centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)] = float(rouR);
-                    cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)<<endl;
-                }//However, the result after %886 can also be negative.
-                else{//If negative after %886, We + 886 after %886
-                    centers.ranges[(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)] = float(rouR);
-                    cout<<">0's laser num: "<<(int(faiR/2.0/M_PI*scan_num360))%int(scan_num360)+int(scan_num360)<<endl;
-                }
-            }
-            else{
-                if(int(faiR/2/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)>=0){
-                    centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)] = -float(rouR);
-                    cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)<<endl;
-                }
-                else{
-                    centers.ranges[int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)] = -float(rouR);
-                    cout<<"<0's laser num: "<<int(faiR/2.0/M_PI*scan_num360+scan_num360/2.0)%int(scan_num360)+int(scan_num360)<<endl;
-                }
-            }
-        }
-        //----------------ceres test---------------
-    }
-    circle_pub.publish(centers);
-
-    */
 }
 
 
@@ -397,29 +333,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     cout<<"dataset_size: "<<dataset.size() << endl;
     cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
     DBSCAN(dataset,EPS,MinPts);
-
-
-
-
-
-
-    /*
-    scan_lock.lock();
-    vector<point> dataset;
-    int counter = 0;
-    for(auto  point_r:point->data.size() ){
-        if(scan_r >= 0.2 && scan_r<=8.0){
-            //normalize rou and sita to the ratio it occupies in full range.
-            point temp_pt = point(counter/scan_num360, scan_r/scan_range, counter);
-            dataset.push_back(temp_pt);
-        }
-        counter++;
-    }
-    cout<<"dataset_size: "<<dataset.size() << endl;
-    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-    DBSCAN(dataset,EPS,MinPts);
-    scan_lock.unlock();
-    */
 }
 
 

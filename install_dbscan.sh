@@ -15,6 +15,10 @@ cmake .. -DCMAKE_INSTALL_PREFIX=yourprefix
 make install
 
 #Install ceres
+#特别注意，最新版ceres已不支持
+#这个不太行，得整一个老一点版本如ceres-solver-1.14.0
+#1.14.0老版本可以用， 新的push上去的东西有毒用不了。
+#再不行就再百度一个ceres教程，
 sudo apt-get install liblapack-dev libsuitesparse-dev libcxsparse3.1.4 libgflags-dev libgoogle-glog-dev libgtest-dev
 cd ~/my_install
 git clone https://github.com/ceres-solver/ceres-solver.git
