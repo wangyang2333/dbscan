@@ -13,17 +13,17 @@
     <param name="distance_max" type="double" value="30.0"/>
     <param name="distance_min" type="double" value="0.0"/>
     <param name="height_max" type="double" value="2.0"/>
-    <param name="height_min" type="double" value="0.0"/>
+    <param name="height_min" type="double" value="-0.4"/>
 
     <!-- DBSCAN's Parameter -->
     <param name="EPS" type="double" value="0.1"/>
     <param name="MinPts" type="int" value="5"/>
-    <param name="min_cluster" type="double" value="20"/>
+    <param name="min_cluster" type="double" value="16"/>
 
     <!-- Ceres' Parameter -->
     <param name="tree_residual" type="double" value="0.01"/>
-    <param name="tree_radius_max" type="double" value="0.18"/>
-    <param name="tree_radius_min" type="double" value="0.05"/>
+    <param name="tree_radius_max" type="double" value="0.22"/>
+    <param name="tree_radius_min" type="double" value="0.02"/>
 
   </node>
 
