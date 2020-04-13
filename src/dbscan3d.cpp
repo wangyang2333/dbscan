@@ -121,6 +121,7 @@ private:
 ros::Publisher cloud_pub;
 ros::Publisher tree_cloud_pub;
 ros::Publisher circle_pub;
+ros::Publisher tree_visual_cloud_pub;
 
 sensor_msgs::LaserScan centers ;
 void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
@@ -202,25 +203,22 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     }
 
     //Push Data Into Cluster//
-    vector<vector<double>> data;
-    vector<double> temp_vec;
+    vector<vector<point>> data;
+    vector<point> temp_vec;
     if(!corePoint.empty()){
         cout<<"begin push"<<endl;
         for(int i=0;i<corePoint.size()-1 ;i++){
             if(corePoint[i].cluster == corePoint[i+1].cluster){
-                temp_vec.push_back(corePoint[i].x);
-                temp_vec.push_back(corePoint[i].y);
+                temp_vec.push_back(corePoint[i]);
             }
             else{
-                temp_vec.push_back(corePoint[i].x);
-                temp_vec.push_back(corePoint[i].y);
+                temp_vec.push_back(corePoint[i]);
                 data.push_back(temp_vec);
                 temp_vec.clear();
             }
 
         }
-        temp_vec.push_back(corePoint[corePoint.size()-1].x);
-        temp_vec.push_back(corePoint[corePoint.size()-1].y);
+        temp_vec.push_back(corePoint[corePoint.size()-1]);
         data.push_back(temp_vec);
     }
 
@@ -240,7 +238,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     //New output:
     for(int i=0; i<data.size(); i++){
         for(int j=0; j<data[i].size(); j++){
-            cout<<"pts: "<<data[i][2*j]<<","<<data[i][2*j+1]<<","<<i<<"\n";
+            cout<<"pts: "<<data[i][j].x<<","<<data[i][j].y<<","<<i<<"\n";
         }
     }
     centers.ranges.clear();
@@ -250,19 +248,24 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     //三维地卡尔坐标系中的ceres优化树心轴。
     //对每个cluster进行优化的for
     std::vector<Point3f> temp_tree_pt;
+
+    std::vector<Point3f> tree_visual;
+    std::vector<std::vector<Point3f>> tree_visual_full;
+
+
     for(int j = 0; j < data.size() ;j ++) {
         //----------------ceres test---------------
 
         //优化初始值把类中第一个点的位置复制给他
-        double x = data[j][0];
-        double y = data[j][1];
+        double x = data[j][0].x;
+        double y = data[j][0].y;
         double r = 0.15;
 
         ceres::Problem problem;
         for (int i = 0; i < data[j].size() / 2; ++i) {
             problem.AddResidualBlock(
                     new ceres::AutoDiffCostFunction<circleResidual, 1, 1, 1, 1>(
-                            new circleResidual(data[j][2 * i], data[j][2 * i + 1])),
+                            new circleResidual(data[j][i].x, data[j][i].y)),
                     //inverse normalization and transfer from deg. to rad.
                     NULL,
                     &x, &y, &r);
@@ -279,8 +282,18 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<"\n";
         //push the result to output vector
         Point3f temp3d(x, y, r);
+        tree_visual.clear();
         if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){
             temp_tree_pt.push_back(temp3d);
+
+            //Do visualization,搞一个向量的向量存Point3f，每个小向量里面是同一棵树的点云
+            for(int i = 0; i < data[j].size(); ++i){
+                Point3f temp3d(data[j][i].x, data[j][i].y, data[j][i].z);
+                tree_visual.push_back(temp3d);
+            }
+            tree_visual_full.push_back(tree_visual);
+
+            //Final good tree output
             std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
         }
 
@@ -304,10 +317,28 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         count++;
     }
     tree_cloud_pub.publish(tree_cloud);
+
+    sensor_msgs::PointCloud tree_visual_cloud;
+    tree_visual_cloud.header.frame_id = "velodyne";
+    //tree_visual_cloud.points.resize(tree_visual.size()*tree_visual_full.size());
+    tree_visual_cloud.channels.resize(1);
+    tree_visual_cloud.channels[0].name = "intensities";
+    //tree_visual_cloud.channels[0].values.resize(tree_visual.size()*tree_visual_full.size());
+    int count_v = 0;
+    for(auto vec : tree_visual_full){
+        for(auto pts : vec)
+        {
+            geometry_msgs::Point32 temp_pts_converter;
+            temp_pts_converter.x = pts.x;
+            temp_pts_converter.y = pts.y;
+            temp_pts_converter.z = pts.z;
+            tree_visual_cloud.points.push_back(temp_pts_converter);
+            tree_visual_cloud.channels[0].values.push_back(count_v);
+        }
+        count_v++;
+    }
+    tree_visual_cloud_pub.publish(tree_visual_cloud);
 }
-
-
-//test
 
 
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
@@ -371,7 +402,8 @@ int main(int argc, char** argv) {
 
     //test
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 1);
-    tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud1", 1);
+    tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 1);
+    tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 1);
 
 
 
