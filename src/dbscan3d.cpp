@@ -342,12 +342,50 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
 }
 
 
+void Point_Cloud_PCA(sensor_msgs::PointCloud PCL){
+    cout<<"Begin global PCA"<<endl;
+    double xmean, ymean, zmean;
+    for (auto pts : PCL.points)
+    {
+        xmean += pts.x;
+        ymean += pts.y;
+        zmean += pts.z;
+    }
+    xmean = xmean / PCL.points.size();
+    ymean = ymean / PCL.points.size();
+    zmean = zmean / PCL.points.size();
+    Eigen::Matrix<double, -1, -1> PCA_X (PCL.points.size(),3);
+    //Insert point into the Matrix
+    for(int i=0; i<PCL.points.size(); i++){
+        //in iteration the i < PCL.point.seze()
+        PCA_X(i,0) = PCL.points[i].x;
+        PCA_X(i,1) = PCL.points[i].y;
+        PCA_X(i,2) = PCL.points[i].z;
+    }
+    Eigen::Matrix<double, 3, 3> PCA_XXT;
+    PCA_XXT = PCA_X.transpose() * PCA_X;
+    //Eigen::Vector3d PCA_Eigenvalue = PCA_XXT.eigenvalues();
+    Eigen::EigenSolver<Eigen::Matrix3d> es(PCA_XXT);
+    //Use Dynamic and Complex matrix, Beacuse the eigenvalue can be complex.
+    Eigen::MatrixXcd Lamda = es.eigenvalues();
+    Eigen::MatrixXcd U = es.eigenvectors();
+    //The principle vector are the columns of Ur
+    cout << "The original Matrix" << endl << PCA_XXT <<endl;
+    cout << "The eigenvalues Lamdas are:" << endl << Lamda << endl;
+    cout << "The eigenvectors matrix U are:" << endl << U << endl;
+}
+
+
+
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 {
     //Convert sensor_msgs::PointCloud2 to sensor_msgs::PointCloud
     sensor_msgs::PointCloud output;
     sensor_msgs::convertPointCloud2ToPointCloud(*input, output);
     cloud_pub.publish(output);
+
+    //test PCA
+    //Point_Cloud_PCA(output);
 
     //Convert sensor_msgs::PointCloud to my_own::point
     int counter = 0;
@@ -366,6 +404,8 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
     DBSCAN(dataset,EPS,MinPts);
 }
+
+
 
 
 
