@@ -1,79 +1,53 @@
-/*All right reserved.
- *if tf in rviz can't display, run a roscore first.
+/*
+ * DBSCAN For VLP-16.
+ * All right reserved.
  */
-
 
 #include <queue>
 #include <sensor_msgs/Imu.h>
 #include <ros/forwards.h>
 #include <sensor_msgs/Image.h>
-
 #include <tf/transform_broadcaster.h>
 #include <tf_conversions/tf_eigen.h>
 #include <opencv2/opencv.hpp>
-
-
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
 #include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
-
 #include <mutex>
 #include <condition_variable>
 #include <thread>
 #include <ceres/ceres.h>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
-
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-//------------------------------------
 #include <sensor_msgs/LaserScan.h>
-
-
-/*
- * We use dbscan in 3d-coordinate.
- *
- * Then we creat a function to compute rou and sita of every point in class.
- *
- *
- *
- *
- *
- *
- */
-
 
 using namespace cv;
 using namespace std;
 
 std::mutex scan_lock;
-
 double scan_num360;
 double scan_range;
 double min_cluster;
-
 double distance_max;
 double distance_min;
 double height_max;
 double height_min;
-
 int MinPts;
 double EPS, tree_residual, tree_radius_max, tree_radius_min;
-
 
 class point{
 public:
@@ -117,13 +91,10 @@ private:
     const double xi_;
     const double yi_;
 };
-
-
 ros::Publisher cloud_pub;
 ros::Publisher tree_cloud_pub;
 ros::Publisher circle_pub;
 ros::Publisher tree_visual_cloud_pub;
-
 sensor_msgs::LaserScan centers ;
 void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
     int len = dataset.size();
@@ -341,8 +312,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     tree_visual_cloud_pub.publish(tree_visual_cloud);
 }
 
-
-void Point_Cloud_PCA(sensor_msgs::PointCloud PCL){
+void PCA_Eigen(sensor_msgs::PointCloud& PCL){
     cout<<"Begin global PCA"<<endl;
     double xmean, ymean, zmean;
     for (auto pts : PCL.points)
@@ -358,9 +328,9 @@ void Point_Cloud_PCA(sensor_msgs::PointCloud PCL){
     //Insert point into the Matrix
     for(int i=0; i<PCL.points.size(); i++){
         //in iteration the i < PCL.point.seze()
-        PCA_X(i,0) = PCL.points[i].x;
-        PCA_X(i,1) = PCL.points[i].y;
-        PCA_X(i,2) = PCL.points[i].z;
+        PCA_X(i,0) = PCL.points[i].x - xmean;
+        PCA_X(i,1) = PCL.points[i].y - ymean;
+        PCA_X(i,2) = PCL.points[i].z - zmean;
     }
     Eigen::Matrix<double, 3, 3> PCA_XXT;
     PCA_XXT = PCA_X.transpose() * PCA_X;
@@ -375,7 +345,103 @@ void Point_Cloud_PCA(sensor_msgs::PointCloud PCL){
     cout << "The eigenvectors matrix U are:" << endl << U << endl;
 }
 
+void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL){
+    cout<<"Begin VFH"<<endl;
+    double xmean, ymean, zmean;
+    for (auto pts : PCL.points)
+    {
+        xmean += pts.x;
+        ymean += pts.y;
+        zmean += pts.z;
+    }
+    xmean = xmean / PCL.points.size();
+    ymean = ymean / PCL.points.size();
+    zmean = zmean / PCL.points.size();
+    Eigen::Matrix<double, -1, -1> VFH_X (PCL.points.size(),3);
+    //Insert point into the Matrix
+    for(int i=0; i<PCL.points.size(); i++){
+        //in iteration the i < PCL.point.seze()
+        VFH_X(i,0) = PCL.points[i].x-xmean;
+        VFH_X(i,1) = PCL.points[i].y-ymean;
+        VFH_X(i,2) = PCL.points[i].z-zmean;
+    }
+    //Compute Dx Dy Dz
+    Eigen::Vector3d Max_Cor = VFH_X.colwise().maxCoeff();
+    Eigen::Vector3d Min_Cor = VFH_X.colwise().minCoeff();
+    double VG_size = 0.3;
+    int Dx, Dy, Dz;// int Dx Dy Dz may cause some problems. Come back later!
+    Dx = (Max_Cor(0) - Min_Cor(0)) / VG_size;
+    Dy = (Max_Cor(1) - Min_Cor(1)) / VG_size;
+    Dz = (Max_Cor(2) - Min_Cor(2)) / VG_size;
+    //cout << "Dx: " << Dx << " Dy: " << Dy << " Dz: " << Dz << endl;
 
+    //Compute Voxel Index for Each PTS and Push them into my Hash Table
+    int PTS_Num_after_VF = 1000;
+    std::vector<  pair<std::vector<geometry_msgs::Point32 >,long int> > Hash_table;
+    sensor_msgs::PointCloud PCL_after_VF;
+    Hash_table.resize(PTS_Num_after_VF);
+    for(int i=0; i<PCL.points.size(); i++){
+        int hx = floor((VFH_X(i,0) -Min_Cor(0))/VG_size);
+        int hy = floor((VFH_X(i,1) -Min_Cor(1))/VG_size);
+        int hz = floor((VFH_X(i,2) -Min_Cor(2))/VG_size);
+        //cout << "hx: " << hx << " hy: " << hy << " hz: " << hz << endl;
+        //Hash PTS to 100 voxels.
+        //Careful this may cause over flow
+
+        geometry_msgs::Point32 current_pts;
+            current_pts.x = VFH_X(i,0) + xmean;
+            current_pts.y = VFH_X(i,1) + ymean;
+            current_pts.z = VFH_X(i,2) + zmean;
+        long int h = (hx + hy * Dx + hz * Dx * Dy);
+        long int hash_num = h % PTS_Num_after_VF; //0~PTS_Num_VF
+        if(Hash_table[hash_num].first.empty()){
+            Hash_table[hash_num].first.push_back(current_pts);
+            Hash_table[hash_num].second = h;
+        }
+        else{
+            if(h == Hash_table[hash_num].second){
+                Hash_table[hash_num].first.push_back(current_pts);
+            }
+            else{
+                //Compute old mean and push into new PCL
+                geometry_msgs::Point32 mean_pts;
+                for(auto pts : Hash_table[hash_num].first){
+                    mean_pts.x += pts.x;
+                    mean_pts.y += pts.y;
+                    mean_pts.z += pts.z;
+                }
+                mean_pts.x = mean_pts.x / Hash_table[hash_num].first.size();
+                mean_pts.y = mean_pts.y / Hash_table[hash_num].first.size();
+                mean_pts.z = mean_pts.z / Hash_table[hash_num].first.size();
+                PCL_after_VF.points.push_back(mean_pts);
+                //Clear and pushback new pts
+                Hash_table[hash_num].first.clear();
+                Hash_table[hash_num].first.push_back(current_pts);
+                Hash_table[hash_num].second = h;
+            }
+        }
+    }
+    for( auto voxel : Hash_table){
+        geometry_msgs::Point32 mean_pts;
+        for(auto pts : voxel.first){
+            mean_pts.x += pts.x;
+            mean_pts.y += pts.y;
+            mean_pts.z += pts.z;
+        }
+        mean_pts.x = mean_pts.x / voxel.first.size();
+        mean_pts.y = mean_pts.y / voxel.first.size();
+        mean_pts.z = mean_pts.z / voxel.first.size();
+        PCL_after_VF.points.push_back(mean_pts);
+    }
+
+    PCL_after_VF.header.frame_id = "velodyne";
+    //tree_visual_cloud.points.resize(tree_visual.size()*tree_visual_full.size());
+    PCL_after_VF.channels.resize(1);
+    PCL_after_VF.channels[0].name = "intensities";
+    tree_visual_cloud_pub.publish(PCL_after_VF);
+
+    cout << endl << VFH_X << endl;
+}
 
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 {
@@ -385,24 +451,27 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     cloud_pub.publish(output);
 
     //test PCA
-    //Point_Cloud_PCA(output);
+    //PCA_Eigen(output);
 
-    //Convert sensor_msgs::PointCloud to my_own::point
-    int counter = 0;
-    std::vector<point> dataset;
-    for(auto pt_iter : output.points){
-        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-                if(pt_iter.z >= height_min)
-                    if(pt_iter.z <= height_max){
-                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
-                        counter++;
-                        dataset.push_back(temp_pt);
-                    }
-    }
-    cout<<"dataset_size: "<<dataset.size() << endl;
-    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-    DBSCAN(dataset,EPS,MinPts);
+    //test VFH
+    Voxel_Filter_Hash(output);
+
+//    //Convert sensor_msgs::PointCloud to my_own::point
+//    int counter = 0;
+//    std::vector<point> dataset;
+//    for(auto pt_iter : output.points){
+//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+//                if(pt_iter.z >= height_min)
+//                    if(pt_iter.z <= height_max){
+//                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
+//                        counter++;
+//                        dataset.push_back(temp_pt);
+//                    }
+//    }
+//    cout<<"dataset_size: "<<dataset.size() << endl;
+//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+//    DBSCAN(dataset,EPS,MinPts);
 }
 
 
