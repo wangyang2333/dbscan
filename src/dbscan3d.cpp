@@ -368,17 +368,20 @@ void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL){
     //Compute Dx Dy Dz
     Eigen::Vector3d Max_Cor = VFH_X.colwise().maxCoeff();
     Eigen::Vector3d Min_Cor = VFH_X.colwise().minCoeff();
-    double VG_size = 0.3;
+    double VG_size = 0.2;
     int Dx, Dy, Dz;// int Dx Dy Dz may cause some problems. Come back later!
-    Dx = (Max_Cor(0) - Min_Cor(0)) / VG_size;
-    Dy = (Max_Cor(1) - Min_Cor(1)) / VG_size;
-    Dz = (Max_Cor(2) - Min_Cor(2)) / VG_size;
+    Dx = (Max_Cor(0) - Min_Cor(0)) / VG_size +1;
+    Dy = (Max_Cor(1) - Min_Cor(1)) / VG_size +1;
+    Dz = (Max_Cor(2) - Min_Cor(2)) / VG_size +1;
     //cout << "Dx: " << Dx << " Dy: " << Dy << " Dz: " << Dz << endl;
 
     //Compute Voxel Index for Each PTS and Push them into my Hash Table
-    int PTS_Num_after_VF = 1000;
+    int PTS_Num_after_VF = 500;
     std::vector<  pair<std::vector<geometry_msgs::Point32 >,long int> > Hash_table;
     sensor_msgs::PointCloud PCL_after_VF;
+    PCL_after_VF.header.frame_id = "velodyne";
+    PCL_after_VF.channels.resize(1);
+    PCL_after_VF.channels[0].name = "intensities";
     Hash_table.resize(PTS_Num_after_VF);
     for(int i=0; i<PCL.points.size(); i++){
         int hx = floor((VFH_X(i,0) -Min_Cor(0))/VG_size);
@@ -393,7 +396,7 @@ void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL){
             current_pts.y = VFH_X(i,1) + ymean;
             current_pts.z = VFH_X(i,2) + zmean;
         long int h = (hx + hy * Dx + hz * Dx * Dy);
-        long int hash_num = h % PTS_Num_after_VF; //0~PTS_Num_VF
+        long int hash_num = h % PTS_Num_after_VF; //0~PTS_Num_VF-1
         if(Hash_table[hash_num].first.empty()){
             Hash_table[hash_num].first.push_back(current_pts);
             Hash_table[hash_num].second = h;
@@ -403,7 +406,7 @@ void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL){
                 Hash_table[hash_num].first.push_back(current_pts);
             }
             else{
-                //Compute old mean and push into new PCL
+                //Handle Conflict: Compute old mean and push into new PCL
                 geometry_msgs::Point32 mean_pts;
                 for(auto pts : Hash_table[hash_num].first){
                     mean_pts.x += pts.x;
@@ -421,26 +424,27 @@ void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL){
             }
         }
     }
+    cout<<endl<<"i ama here"<<endl;
     for( auto voxel : Hash_table){
-        geometry_msgs::Point32 mean_pts;
-        for(auto pts : voxel.first){
-            mean_pts.x += pts.x;
-            mean_pts.y += pts.y;
-            mean_pts.z += pts.z;
+        if(!voxel.first.empty())
+        {
+            geometry_msgs::Point32 mean_pts2;
+            for(auto pts : voxel.first){
+                mean_pts2.x += pts.x;
+                mean_pts2.y += pts.y;
+                mean_pts2.z += pts.z;
+            }
+            mean_pts2.x = mean_pts2.x / voxel.first.size();
+            mean_pts2.y = mean_pts2.y / voxel.first.size();
+            mean_pts2.z = mean_pts2.z / voxel.first.size();
+            PCL_after_VF.points.push_back(mean_pts2);
         }
-        mean_pts.x = mean_pts.x / voxel.first.size();
-        mean_pts.y = mean_pts.y / voxel.first.size();
-        mean_pts.z = mean_pts.z / voxel.first.size();
-        PCL_after_VF.points.push_back(mean_pts);
+        else{
+            cout<<endl<<"Empty Hash Bucket!"<<endl;
+        }
     }
-
-    PCL_after_VF.header.frame_id = "velodyne";
-    //tree_visual_cloud.points.resize(tree_visual.size()*tree_visual_full.size());
-    PCL_after_VF.channels.resize(1);
-    PCL_after_VF.channels[0].name = "intensities";
     tree_visual_cloud_pub.publish(PCL_after_VF);
-
-    cout << endl << VFH_X << endl;
+    //cout << endl << VFH_X << endl;
 }
 
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
