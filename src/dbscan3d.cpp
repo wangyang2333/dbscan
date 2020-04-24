@@ -102,9 +102,13 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     cout<<"calculate pts"<<endl;
     for(int i=0;i<len;i++){
         for(int j=i+1;j<len;j++){
+            if(dataset[i].pts >= MinPts){
+                break;
+            }
             if(squareDistance(dataset[i],dataset[j])<Eps)
                 dataset[i].pts++;
             dataset[j].pts++;
+            //END EARILER TO SAVE COMPUTATION
         }
     }
     //core point
@@ -458,24 +462,24 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     //PCA_Eigen(output);
 
     //test VFH
-    Voxel_Filter_Hash(output);
+    //Voxel_Filter_Hash(output);
 
-//    //Convert sensor_msgs::PointCloud to my_own::point
-//    int counter = 0;
-//    std::vector<point> dataset;
-//    for(auto pt_iter : output.points){
-//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-//                if(pt_iter.z >= height_min)
-//                    if(pt_iter.z <= height_max){
-//                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
-//                        counter++;
-//                        dataset.push_back(temp_pt);
-//                    }
-//    }
-//    cout<<"dataset_size: "<<dataset.size() << endl;
-//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-//    DBSCAN(dataset,EPS,MinPts);
+    //Convert sensor_msgs::PointCloud to my_own::point
+    int counter = 0;
+    std::vector<point> dataset;
+    for(auto pt_iter : output.points){
+        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+                if(pt_iter.z >= height_min)
+                    if(pt_iter.z <= height_max){
+                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
+                        counter++;
+                        dataset.push_back(temp_pt);
+                    }
+    }
+    cout<<"dataset_size: "<<dataset.size() << endl;
+    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+    DBSCAN(dataset,EPS,MinPts);
 }
 
 
