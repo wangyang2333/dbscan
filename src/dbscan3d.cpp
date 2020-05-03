@@ -34,6 +34,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sensor_msgs/LaserScan.h>
+#include <ctime>
+#include "kd_tree_nn.h"
 
 using namespace cv;
 using namespace std;
@@ -95,7 +97,8 @@ ros::Publisher cloud_pub;
 ros::Publisher tree_cloud_pub;
 ros::Publisher circle_pub;
 ros::Publisher tree_visual_cloud_pub;
-sensor_msgs::LaserScan centers ;
+sensor_msgs::LaserScan centers;
+
 void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
     int len = dataset.size();
     //calculate pts
@@ -274,8 +277,6 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         }
 
     }
-
-
 
     sensor_msgs::PointCloud tree_cloud;
     tree_cloud.header.frame_id = "velodyne";
@@ -464,22 +465,31 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     //test VFH
     //Voxel_Filter_Hash(output);
 
-    //Convert sensor_msgs::PointCloud to my_own::point
-    int counter = 0;
-    std::vector<point> dataset;
-    for(auto pt_iter : output.points){
-        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-                if(pt_iter.z >= height_min)
-                    if(pt_iter.z <= height_max){
-                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
-                        counter++;
-                        dataset.push_back(temp_pt);
-                    }
-    }
-    cout<<"dataset_size: "<<dataset.size() << endl;
-    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-    DBSCAN(dataset,EPS,MinPts);
+    //test KDTree
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
+    KD_TREE_NN(output);
+    endTime = clock();//计时结束
+    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+
+//
+//    //Convert sensor_msgs::PointCloud to my_own::point
+//    int counter = 0;
+//    std::vector<point> dataset;
+//    for(auto pt_iter : output.points){
+//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+//                if(pt_iter.z >= height_min)
+//                    if(pt_iter.z <= height_max){
+//                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
+//                        counter++;
+//                        dataset.push_back(temp_pt);
+//                    }
+//    }
+//    cout<<"dataset_size: "<<dataset.size() << endl;
+//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+//    DBSCAN(dataset,EPS,MinPts);
 }
 
 
@@ -511,6 +521,7 @@ int main(int argc, char** argv) {
     ros::param::get("~height_min",height_min);
 
 
+
     cout<<"scan_range:"<<scan_range<<endl;
     cout<<"scan_number_360:"<<scan_num360<<endl;
     cout<<"tree_point:"<<tree_pt<<endl;
@@ -522,8 +533,6 @@ int main(int argc, char** argv) {
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 1);
     tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 1);
     tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 1);
-
-
 
     ros::spin();
     return 0;

@@ -150,10 +150,11 @@ target_link_libraries( dbscan ${OpenCV_LIBS} )
 target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
-add_executable(dbscan3d src/dbscan3d.cpp)
+add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )
+
 
 
 add_executable(sendgoal2 src/sendgoal2.cpp)
