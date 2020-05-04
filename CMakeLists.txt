@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dbscan)
-
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -115,7 +113,6 @@ add_subdirectory(/home/xcy/my_install/dlib/dlib dlib_build)
 catkin_package(
   LIBRARIES dbscan sendgoal2 tree_tracker dbscan3d
   CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs tf tf_conversions
-  DEPENDS system_lib
 )
 
 find_package(Ceres REQUIRED PATHS "/home/xcy/catkin_ws/install_isolated/lib/cmake/Ceres")
@@ -150,7 +147,7 @@ target_link_libraries( dbscan ${OpenCV_LIBS} )
 target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
-add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h)
+add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )

@@ -36,6 +36,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <ctime>
 #include "kd_tree_nn.h"
+#include "octree_nn.h"
 
 using namespace cv;
 using namespace std;
@@ -466,14 +467,20 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     //Voxel_Filter_Hash(output);
 
     //test KDTree
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    KD_TREE_NN(output);
+//    endTime = clock();//计时结束
+//    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+    //test Octree
     clock_t startTime,endTime;
     startTime = clock();//计时开始
-    KD_TREE_NN(output);
+    OCTREE_NN(output);
     endTime = clock();//计时结束
     cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
-//
 //    //Convert sensor_msgs::PointCloud to my_own::point
 //    int counter = 0;
 //    std::vector<point> dataset;
@@ -491,10 +498,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
 //    DBSCAN(dataset,EPS,MinPts);
 }
-
-
-
-
 
 int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);

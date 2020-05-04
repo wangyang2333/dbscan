@@ -5,31 +5,9 @@
 #ifndef SRC_KD_TREE_NN_H
 #define SRC_KD_TREE_NN_H
 
-#include <queue>
 #include <ros/ros.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <mutex>
-#include <condition_variable>
-#include <thread>
-#include <ceres/ceres.h>
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <opencv2/core/eigen.hpp>
 #include <sensor_msgs/PointCloud.h>
-#include <sensor_msgs/point_cloud_conversion.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <sensor_msgs/LaserScan.h>
 #include <ctime>
 #include "kd_tree_nn.h"
 
