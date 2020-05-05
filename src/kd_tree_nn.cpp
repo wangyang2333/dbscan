@@ -31,7 +31,7 @@ T findMiddleValue(vector<T> vec)
     return vec[pos];
 }
 
-void buildKdTree(KdTree* tree, vector<vector<double> > data, unsigned depth)
+void buildKdTree(KdTree* tree, vector<vector<double> >& data, unsigned depth)
 {
     //样本的数量
     unsigned samplesNum = data.size();

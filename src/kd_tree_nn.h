@@ -78,7 +78,7 @@ vector<vector<T> > Transpose(vector<vector<T> > Matrix);
 template <typename T>
 T findMiddleValue(vector<T> vec);
 
-void buildKdTree(KdTree* tree, vector<vector<double> > data, unsigned depth);
+void buildKdTree(KdTree* tree, vector<vector<double> >& data, unsigned depth);
 
 void printKdTree(KdTree *tree, unsigned depth);
 
