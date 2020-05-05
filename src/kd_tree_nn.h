@@ -11,6 +11,11 @@
 #include <ctime>
 #include "kd_tree_nn.h"
 
+#include <pcl/point_cloud.h>
+#include <pcl/octree/octree_search.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+
 using namespace std;
 
 struct KdTree{
@@ -91,4 +96,5 @@ void searchNearestNeighbor(vector<double> goal, KdTree *tree, int k, int depth);
 
 void KD_TREE_NN(sensor_msgs::PointCloud& PCL);
 
+void testPCL(sensor_msgs::PointCloud& PCL);
 #endif //SRC_KD_TREE_NN_H

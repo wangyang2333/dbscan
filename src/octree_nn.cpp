@@ -22,7 +22,6 @@ OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<d
             if( PCL.points[point_indice[i]].y > center[1])mortoncode = mortoncode|2;
             if( PCL.points[point_indice[i]].z > center[2])mortoncode = mortoncode|4;
             childrenPointIndice[mortoncode].push_back(point_indice[i]);
-            //ROS_INFO("mortoncode:%d",mortoncode);
         }
         for(int i = 0; i < 8; i++){
             vector<double> childCenter;
@@ -31,8 +30,6 @@ OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<d
             childCenter.push_back(center[1] + (((i&2)!=0)?0.5:-0.5)*extent);
             childCenter.push_back(center[2] + (((i&4)!=0)?0.5:-0.5)*extent);
             double childExtent = 0.5 * extent;
-            //ROS_INFO("extent = %f",childExtent);
-            //ROS_INFO("i=%d, center:%f,%f,%f",i ,childCenter[0],childCenter[1],childCenter[2]);
             root->children[i] = buildOctree(root->children[i], PCL,
                                             childCenter, childExtent, childrenPointIndice[i], leafsize, min_extent);
         }
@@ -42,7 +39,6 @@ OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<d
 
 void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL)
 {
-    ROS_INFO("extent:%f",root->extent);
     if(root->isLeaf){
         for(int i = 0; i < root->point_indice.size(); i++){
             ROS_INFO(" PTS_indice:%d",root->point_indice[i]);
@@ -154,7 +150,6 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
     }
     if(root==NULL)return false;
     if(root->isLeaf && root->point_indice.size() > 0){
-        ROS_INFO("1111111");
         for(int i = 0; i < root->point_indice.size(); i++){
             vector<double> toBeAdded;
             toBeAdded.push_back(PCL.points[root->point_indice[i]].x);
@@ -169,20 +164,16 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
     if(goal[1] > root->center[1])morton_code = morton_code|2;
     if(goal[2] > root->center[2])morton_code = morton_code|4;
     if(searchOctreeNN(goal, PCL, root->children[morton_code], k))return true;
-    ROS_INFO("2222222");
     for(int i = 0; i < 8; i++){
-        ROS_INFO("33333");
         if(i == morton_code || root->children[i] == NULL)continue;
-        ROS_INFO("444444");
         if(overlap(goal,root->children[i])== false)continue;
-        ROS_INFO("55555");
         if(searchOctreeNN(goal, PCL, root->children[i], k))return true;
     }
     return inside(goal, root);
 }
 
 void OCTREE_NN(sensor_msgs::PointCloud& PCL){
-    //ROS_INFO("There is all %d point(s).",PCL.points.size());
+    ROS_INFO("There is all %d point(s).",int(PCL.points.size()));
     double max_x=-INFINITY, max_y=-INFINITY, max_z=-INFINITY, min_x =INFINITY, min_y=INFINITY, min_z=INFINITY;
     for(int i = 0; i < PCL.points.size();  i++ ){
         if(PCL.points[i].x < min_x) min_x = PCL.points[i].x;
@@ -208,17 +199,23 @@ void OCTREE_NN(sensor_msgs::PointCloud& PCL){
     int leafsize = 4;
     double min_extent = 0.0001;
     auto root = new OctreeNode(center, extent, point_indice, false);
+
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
     buildOctree(root, PCL, center, extent, point_indice, leafsize, min_extent);
+    endTime = clock();//计时结束
+    cout << "The run Octree build time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     vector<double> goal;
-    goal.push_back(8.1);
-    goal.push_back(12);
-    goal.push_back(-3);
+    goal.push_back(11.8);
+    goal.push_back(27.0);
+    goal.push_back(-3.3);
     //printOctree(root, PCL);
-    ROS_INFO("begin searcch");
+    startTime = clock();//计时开始
     searchOctreeNN(goal, PCL, root, 3);
+    endTime = clock();//计时结束
+    cout << "The run Octree search time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     for(int i = 0; i < resultVector2.size(); i++){
         cout<<"x="<<resultVector2[i][0]<<",y="<<resultVector2[i][1]<<",z="<<resultVector2[i][2]<<endl;
     }
-
 }
 

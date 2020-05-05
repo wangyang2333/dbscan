@@ -466,19 +466,26 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     //test VFH
     //Voxel_Filter_Hash(output);
 
-    //test KDTree
+//    //test KDTree
 //    clock_t startTime,endTime;
 //    startTime = clock();//计时开始
 //    KD_TREE_NN(output);
 //    endTime = clock();//计时结束
 //    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //test Octree
+    //test PCL Octree
     clock_t startTime,endTime;
     startTime = clock();//计时开始
-    OCTREE_NN(output);
+    testPCL(output);
     endTime = clock();//计时结束
     cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+//    //test Octree
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    OCTREE_NN(output);
+//    endTime = clock();//计时结束
+//    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
 //    //Convert sensor_msgs::PointCloud to my_own::point

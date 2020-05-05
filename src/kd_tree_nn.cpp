@@ -313,14 +313,72 @@ void KD_TREE_NN(sensor_msgs::PointCloud& PCL){
 
     //build KDTree
     KdTree* kdTree = new KdTree;
-    buildKdTree(kdTree, PCL_data, 0);
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
+    buildKdTree(kdTree, PCL_data, 0);;
+    endTime = clock();//计时结束
+    cout << "The run KDtree build time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     //printKdTree(kdTree, 0);
     vector<double> goal;
     goal.push_back(8.1);
     goal.push_back(12);
     goal.push_back(-3);
+    startTime = clock();//计时开始
     searchNearestNeighbor(goal, kdTree, 3, 0);
+    endTime = clock();//计时结束
+    cout << "The run KDtree search time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     for(int i = 0; i <3; i ++ ){
         cout<<"x="<<resultVector[i][0]<<",y="<<resultVector[i][1]<<",z="<<resultVector[i][2]<<endl;
     }
+}
+
+void testPCL(sensor_msgs::PointCloud& PCL){
+    srand ((unsigned int) time (NULL));
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+    sensor_msgs::PointCloud2 PCL2;
+    sensor_msgs::convertPointCloudToPointCloud2(PCL, PCL2);
+
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(PCL2,pcl_pc2);
+    pcl::fromPCLPointCloud2(pcl_pc2,*cloud);
+
+
+
+    float resolution = 0.0001;
+
+    clock_t startTime, endTime;
+    pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+    octree.setInputCloud (cloud);
+    startTime = clock();//计时开始
+    octree.addPointsFromInputCloud ();
+    endTime = clock();//计时结束
+    cout << "The PCL Octree build run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+    pcl::PointXYZ searchPoint;
+    searchPoint.x = 1024.0f * rand () / (RAND_MAX + 1.0f);
+    searchPoint.y = 1024.0f * rand () / (RAND_MAX + 1.0f);
+    searchPoint.z = 1024.0f * rand () / (RAND_MAX + 1.0f);
+
+    // K nearest neighbor search
+    int K = 4;
+
+    std::vector<int> pointIdxNKNSearch;
+    std::vector<float> pointNKNSquaredDistance;
+
+    std::cout << "K nearest neighbor search at (" << searchPoint.x
+              << " " << searchPoint.y
+              << " " << searchPoint.z
+              << ") with K=" << K << std::endl;
+    startTime = clock();//计时开始
+    if (octree.nearestKSearch (searchPoint, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+    {
+        for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i)
+            std::cout << "    "  <<   cloud->points[ pointIdxNKNSearch[i] ].x
+                      << " " << cloud->points[ pointIdxNKNSearch[i] ].y
+                      << " " << cloud->points[ pointIdxNKNSearch[i] ].z
+                      << " (squared distance: " << pointNKNSquaredDistance[i] << ")" << std::endl;
+    }
+    endTime = clock();//计时结束
+    cout << "The PCL Octree seach run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
 }
