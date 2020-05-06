@@ -103,20 +103,28 @@ sensor_msgs::LaserScan centers;
 void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
     int len = dataset.size();
     //calculate pts
-    cout<<"calculate pts"<<endl;
+    //cout<<"calculate pts"<<endl;
+
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
+    ROS_INFO("Data Point size : %d", int(dataset.size()));
     for(int i=0;i<len;i++){
         for(int j=i+1;j<len;j++){
             if(dataset[i].pts >= MinPts){
                 break;
             }
-            if(squareDistance(dataset[i],dataset[j])<Eps)
+            if(squareDistance(dataset[i],dataset[j])<Eps){
                 dataset[i].pts++;
-            dataset[j].pts++;
+                dataset[j].pts++;
+            }
             //END EARILER TO SAVE COMPUTATION
         }
     }
+    endTime = clock();//计时结束
+    cout << "The Brute-Force search time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
     //core point
-    cout<<"core point "<<endl;
+    //cout<<"core point "<<endl;
     vector<point> corePoint;
     for(int i=0;i<len;i++){
         if(dataset[i].pts>=MinPts) {
@@ -124,8 +132,12 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
             corePoint.push_back(dataset[i]);
         }
     }
-    cout<<"joint core point"<<endl;
+    endTime = clock();//计时结束
+    cout << "The CorePts Find time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+    //cout<<"joint core point"<<endl;
     //joint core point
+    ROS_INFO("Core Point size : %d", int(corePoint.size()));
     for(int i=0;i<corePoint.size();i++){
         for(int j=i+1;j<corePoint.size();j++){
             if(squareDistance(corePoint[i],corePoint[j])<Eps){
@@ -134,24 +146,29 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
             }
         }
     }
+    endTime = clock();//计时结束
+    cout << "The CorePts Combining time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     for(int i=0;i<corePoint.size();i++){
-        stack<point*> ps;
+
+        vector<point*> ps;
         if(corePoint[i].visited == 1) continue;
-        ps.push(&corePoint[i]);
+        ps.push_back(&corePoint[i]);
         point *v;
         while(!ps.empty()){
-            v = ps.top();
+            v = ps.back();
             v->visited = 1;
-            ps.pop();
+            ps.pop_back();
             for(int j=0;j<v->corepts.size();j++){
                 if(corePoint[v->corepts[j]].visited==1) continue;
                 corePoint[v->corepts[j]].cluster = corePoint[i].cluster;
                 corePoint[v->corepts[j]].visited = 1;
-                ps.push(&corePoint[v->corepts[j]]);
+                ps.push_back(&corePoint[v->corepts[j]]);
             }
         }
     }
-    cout<<"border point,joint border point to core point"<<endl;
+    endTime = clock();//计时结束
+    cout << "The CorePts join time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    //cout<<"border point,joint border point to core point"<<endl;
     //border point,joint border point to core point
     for(int i=0;i<len;i++){
         if(dataset[i].pointType==3) continue;
@@ -163,7 +180,8 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
             }
         }
     }
-
+    endTime = clock();//计时结束
+    cout << "The BorderPts join time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
 	//Number Each Data
@@ -178,15 +196,18 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
                 temp_cluster++;
             }
         }
-        cout<<"end number"<<endl;
+        //cout<<"end number"<<endl;
         corePoint[corePoint.size()-1].cluster = temp_cluster;
     }
+    endTime = clock();//计时结束
+    cout << "The Clustering time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
 
     //Push Data Into Cluster//
     vector<vector<point>> data;
     vector<point> temp_vec;
     if(!corePoint.empty()){
-        cout<<"begin push"<<endl;
+        //cout<<"begin push"<<endl;
         for(int i=0;i<corePoint.size()-1 ;i++){
             if(corePoint[i].cluster == corePoint[i+1].cluster){
                 temp_vec.push_back(corePoint[i]);
@@ -206,7 +227,7 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     for(int f = 0; f<data.size(); f++)
     {
         if(data[f].size()< min_cluster){
-            cout<<"Do erase a cluster with "<<data[f].size()<<" elements\n";
+            //cout<<"Do erase a cluster with "<<data[f].size()<<" elements\n";
             data.erase(data.begin()+f);
             f--;
         }
@@ -218,12 +239,16 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
     //New output:
     for(int i=0; i<data.size(); i++){
         for(int j=0; j<data[i].size(); j++){
-            cout<<"pts: "<<data[i][j].x<<","<<data[i][j].y<<","<<i<<"\n";
+            //cout<<"pts: "<<data[i][j].x<<","<<data[i][j].y<<","<<i<<"\n";
         }
     }
     centers.ranges.clear();
     centers.ranges.resize(1000);
-    cout<<"cluster size:"<<data.size()<<endl;
+    //cout<<"cluster size:"<<data.size()<<endl;
+
+
+    endTime = clock();//计时结束
+    cout << "The Data Pre time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     //三维地卡尔坐标系中的ceres优化树心轴。
     //对每个cluster进行优化的for
@@ -254,10 +279,10 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         ceres::Solver::Options options;
         options.max_num_iterations = 100;
         options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
         ceres::Solver::Summary summary;
         Solve(options, &problem, &summary);
-        std::cout << summary.BriefReport() << "\n";
+        //std::cout << summary.BriefReport() << "\n";
         r= abs(r);
         std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<"\n";
         //push the result to output vector
@@ -278,6 +303,9 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         }
 
     }
+
+    endTime = clock();//计时结束
+    cout << "The Optimization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     sensor_msgs::PointCloud tree_cloud;
     tree_cloud.header.frame_id = "velodyne";
@@ -316,6 +344,8 @@ void DBSCAN(vector<point> dataset,double Eps,int MinPts){//按照xy密度来进�
         count_v++;
     }
     tree_visual_cloud_pub.publish(tree_visual_cloud);
+    endTime = clock();//计时结束
+    cout << "The Data Visualization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 void PCA_Eigen(sensor_msgs::PointCloud& PCL){
@@ -460,11 +490,11 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     sensor_msgs::convertPointCloud2ToPointCloud(*input, output);
     cloud_pub.publish(output);
 
-    //test PCA
-    //PCA_Eigen(output);
+//    //test PCA
+//    PCA_Eigen(output);
 
-    //test VFH
-    //Voxel_Filter_Hash(output);
+//    //test VFH
+//    Voxel_Filter_Hash(output);
 
 //    //test KDTree
 //    clock_t startTime,endTime;
@@ -473,12 +503,12 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    endTime = clock();//计时结束
 //    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //test PCL Octree
-    clock_t startTime,endTime;
-    startTime = clock();//计时开始
-    testPCL(output);
-    endTime = clock();//计时结束
-    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+//    //test PCL Octree
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    testPCL(output);
+//    endTime = clock();//计时结束
+//    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 //    //test Octree
 //    clock_t startTime,endTime;
@@ -488,22 +518,28 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
-//    //Convert sensor_msgs::PointCloud to my_own::point
-//    int counter = 0;
-//    std::vector<point> dataset;
-//    for(auto pt_iter : output.points){
-//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-//                if(pt_iter.z >= height_min)
-//                    if(pt_iter.z <= height_max){
-//                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
-//                        counter++;
-//                        dataset.push_back(temp_pt);
-//                    }
-//    }
-//    cout<<"dataset_size: "<<dataset.size() << endl;
-//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-//    DBSCAN(dataset,EPS,MinPts);
+    //Convert sensor_msgs::PointCloud to my_own::point
+    int counter = 0;
+    std::vector<point> dataset;
+    for(auto pt_iter : output.points){
+        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+                if(pt_iter.z >= height_min)
+                    if(pt_iter.z <= height_max){
+                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
+                        counter++;
+                        dataset.push_back(temp_pt);
+                    }
+    }
+    cout<<"dataset_size: "<<dataset.size() << endl;
+    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+
+    KdTree* kdTree = new KdTree;
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
+    DBSCAN(dataset,EPS,MinPts);
+    endTime = clock();//计时结束
+    cout << "The run Full DBSCAN time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 int main(int argc, char** argv) {
@@ -537,7 +573,7 @@ int main(int argc, char** argv) {
     cout<<"tree_point:"<<tree_pt<<endl;
     cout<<"scan_topic_name:"<<scan_name<<endl;
     circle_pub = nh_.advertise<sensor_msgs::PointCloud2>(tree_pt,1);
-    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 1, point_callback);
+    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 10, point_callback);
 
     //test
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 1);
