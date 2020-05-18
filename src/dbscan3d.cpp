@@ -26,7 +26,8 @@
 
 //#include "kd_tree_nn.h"
 //#include "octree_nn.h"
-#include "kmeans.h"
+//#include "kmeans.h"
+#include "gmm_EM.h"
 
 using namespace cv;
 using namespace std;
@@ -474,11 +475,11 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     sensor_msgs::convertPointCloud2ToPointCloud(*input, output);
     cloud_pub.publish(output);
 
-    //test PCA
-    //PCA_Eigen(output);
+//    //test PCA
+//    PCA_Eigen(output);
 
-    //test VFH
-    //Voxel_Filter_Hash(output);
+//    //test VFH
+//    Voxel_Filter_Hash(output);
 
 //    //test KDTree
 //    clock_t startTime,endTime;
@@ -494,13 +495,19 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    endTime = clock();//计时结束
 //    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
+//    //test Kmeans
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    tree_cloud_pub.publish(Kmeans(output));
+//    endTime = clock();//计时结束
+//    cout << "The K-means run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //test Kmeans
+    //test gmmEM
     clock_t startTime,endTime;
     startTime = clock();//计时开始
-    tree_cloud_pub.publish(Kmeans(output));
+    tree_cloud_pub.publish(gmmEM(output));
     endTime = clock();//计时结束
-    cout << "The K-means run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    cout << "The gmmEM run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 //    //Convert sensor_msgs::PointCloud to my_own::point
 //    int counter = 0;
