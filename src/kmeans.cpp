@@ -8,7 +8,7 @@ double distance(geometry_msgs::Point32 point1, geometry_msgs::Point32 point2){
     return sqrt((point1.x - point2.x)*(point1.x - point2.x) +
     (point1.y - point2.y)*(point1.y - point2.y) + (point1.z -point2.z)*(point1.z -point2.z));
 }
-
+ 
 sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
     //Initialization
     PCL.channels.clear();
