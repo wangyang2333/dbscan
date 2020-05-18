@@ -8,7 +8,7 @@ double distance(geometry_msgs::Point32 point1, geometry_msgs::Point32 point2){
     return sqrt((point1.x - point2.x)*(point1.x - point2.x) +
     (point1.y - point2.y)*(point1.y - point2.y) + (point1.z -point2.z)*(point1.z -point2.z));
 }
- 
+
 sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
     //Initialization
     PCL.channels.clear();
@@ -40,7 +40,10 @@ sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
 
     double error = INFINITY;
     vector<geometry_msgs::Point32> lastClusterCenters;
-    while(error > 1e-1){
+    while(error > 1e-6){
+//        ROS_INFO("The center of cluster is %f,%f,%f ",clusterCenters[0].x,clusterCenters[0].y,clusterCenters[0].z);
+//        ROS_INFO("The center of cluster is %f,%f,%f ",clusterCenters[1].x,clusterCenters[1].y,clusterCenters[1].z);
+//        ROS_INFO("The center of cluster is %f,%f,%f ",clusterCenters[2].x,clusterCenters[2].y,clusterCenters[2].z);
         //E-step compute r[n][k]
         for(int n = 0; n < PCL.points.size(); n++){
             double minDistance = INFINITY;
@@ -60,20 +63,31 @@ sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
             clusterCenters[i].y = 0;
             clusterCenters[i].z = 0;
         }
+        double counter[3];
+        counter[0]=counter[1]=counter[2]=0;
         for(int n = 0; n < PCL.points.size(); n++){
+            counter[int(PCL.channels[0].values[n])]++;
             clusterCenters[int(PCL.channels[0].values[n])].x += PCL.points[n].x;
             clusterCenters[int(PCL.channels[0].values[n])].y += PCL.points[n].y;
             clusterCenters[int(PCL.channels[0].values[n])].z += PCL.points[n].z;
         }
         for(int i = 0; i < clusterCenters.size(); i++){
-            clusterCenters[i].x = clusterCenters[i].x/PCL.points.size();
-            clusterCenters[i].y = clusterCenters[i].y/PCL.points.size();
-            clusterCenters[i].z = clusterCenters[i].z/PCL.points.size();
+            if(counter[i]==0){
+                break;
+            }
+            clusterCenters[i].x = clusterCenters[i].x/counter[i];
+            clusterCenters[i].y = clusterCenters[i].y/counter[i];
+            clusterCenters[i].z = clusterCenters[i].z/counter[i];
         }
         error = 0;
         for(int i = 0; i < clusterCenters.size(); i++){
             error = error + distance(clusterCenters[i],lastClusterCenters[i]);
         }
+    }
+    //ROS_INFO("error: %f",error);
+    for(int i = 0; i < clusterCenters.size(); i++){
+        PCL.points.push_back(clusterCenters[i]);
+        PCL.channels[0].values.push_back(i);
     }
     return PCL;
 }
