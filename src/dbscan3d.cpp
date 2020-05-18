@@ -24,6 +24,10 @@
 #include <sensor_msgs/LaserScan.h>
 #include <ctime>
 
+//#include "kd_tree_nn.h"
+//#include "octree_nn.h"
+#include "kmeans.h"
+
 using namespace cv;
 using namespace std;
 
@@ -476,22 +480,44 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     //test VFH
     //Voxel_Filter_Hash(output);
 
-    //Convert sensor_msgs::PointCloud to my_own::point
-    int counter = 0;
-    std::vector<point> dataset;
-    for(auto pt_iter : output.points){
-        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-                if(pt_iter.z >= height_min)
-                    if(pt_iter.z <= height_max){
-                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
-                        counter++;
-                        dataset.push_back(temp_pt);
-                    }
-    }
-    cout<<"dataset_size: "<<dataset.size() << endl;
-    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-    DBSCAN(dataset,EPS,MinPts);
+//    //test KDTree
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    KD_TREE_NN(output);
+//    endTime = clock();//计时结束
+//    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+//    //test Octree
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    OCTREE_NN(output);
+//    endTime = clock();//计时结束
+//    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+
+    //test Kmeans
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
+    tree_cloud_pub.publish(Kmeans(output));
+    endTime = clock();//计时结束
+    cout << "The K-means run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+//    //Convert sensor_msgs::PointCloud to my_own::point
+//    int counter = 0;
+//    std::vector<point> dataset;
+//    for(auto pt_iter : output.points){
+//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+//                if(pt_iter.z >= height_min)
+//                    if(pt_iter.z <= height_max){
+//                        point temp_pt = point(pt_iter.x, pt_iter.y, pt_iter.z, counter);
+//                        counter++;
+//                        dataset.push_back(temp_pt);
+//                    }
+//    }
+//    cout<<"dataset_size: "<<dataset.size() << endl;
+//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+//    DBSCAN(dataset,EPS,MinPts);
 }
 
 

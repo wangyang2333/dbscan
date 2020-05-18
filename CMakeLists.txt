@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(dbscan)
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
+project(dbscan)
+#set(CMAKE_BUILD_TYPE "Release")
+#set(CMAKE_CXX_FLAGS "-std=c++11 -o3 -Wall")
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -147,7 +151,7 @@ target_link_libraries( dbscan ${OpenCV_LIBS} )
 target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
-add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h)
+add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h src/kmeans.cpp src/kmeans.h)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )
