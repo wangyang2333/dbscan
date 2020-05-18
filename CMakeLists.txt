@@ -151,7 +151,7 @@ target_link_libraries( dbscan ${OpenCV_LIBS} )
 target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
-add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h src/kmeans.cpp src/kmeans.h src/gmm_EM.cpp src/gmm_EM.h)
+add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h src/kmeans.cpp src/kmeans.h src/gmm_EM.cpp src/gmm_EM.h src/spectral_clustering.cpp src/spectral_clustering.h)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )

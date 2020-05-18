@@ -61,12 +61,12 @@ sensor_msgs::PointCloud gmmEM(sensor_msgs::PointCloud PCL){
 
     for(int i = 0; i < K; i++){
         geometry_msgs::Point32 tempPoint;
-//        clusterCenters[i][0] = rand()/double(RAND_MAX)*(xMax-xMin)+xMin;
-//        clusterCenters[i][1] = rand()/double(RAND_MAX)*(yMax-yMin)+yMin;
-//        clusterCenters[i][2] = rand()/double(RAND_MAX)*(zMax-zMin)+zMin;
-        clusterCenters[i][0] = (double(i)-1.0)*3.0;
-        clusterCenters[i][1] = 3;
-        clusterCenters[i][2] = 0;
+        clusterCenters[i][0] = rand()/double(RAND_MAX)*(xMax-xMin)+xMin;
+        clusterCenters[i][1] = rand()/double(RAND_MAX)*(yMax-yMin)+yMin;
+        clusterCenters[i][2] = rand()/double(RAND_MAX)*(zMax-zMin)+zMin;
+//        clusterCenters[i][0] = (double(i)-1.0)*3.0;
+//        clusterCenters[i][1] = 3;
+//        clusterCenters[i][2] = 0;
         clusterSIGMA[i].setIdentity();
         clusterPI[i] = 1.0 / double(K);
     }
@@ -76,7 +76,7 @@ sensor_msgs::PointCloud gmmEM(sensor_msgs::PointCloud PCL){
     Eigen::MatrixXd znk;
     znk.resize(PCL.points.size(), K);
     int counter= 100;
-    while(counter!=0&&error>1e-1){
+    while(counter!=0&&error>1e-3){
         counter--;
 //        cout<<"center0:"<<clusterCenters[0]<<endl;
 //        cout<<"center1:"<<clusterCenters[1]<<endl;
