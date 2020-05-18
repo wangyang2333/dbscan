@@ -11,6 +11,7 @@ double distance(geometry_msgs::Point32 point1, geometry_msgs::Point32 point2){
 
 sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
     //Initialization
+    int K = 3;
     PCL.channels.clear();
     PCL.channels.resize(1);
     PCL.channels[0].name = "cluster";
@@ -26,7 +27,6 @@ sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
         if(PCL.points[i].y > yMax) yMax = PCL.points[i].y;
         if(PCL.points[i].z > zMax) zMax = PCL.points[i].z;
     }
-    int K = 3;
     srand((int)(time(NULL)));
     vector<geometry_msgs::Point32> clusterCenters;
     for(int i = 0; i < K; i++){
@@ -63,8 +63,10 @@ sensor_msgs::PointCloud Kmeans(sensor_msgs::PointCloud PCL){
             clusterCenters[i].y = 0;
             clusterCenters[i].z = 0;
         }
-        double counter[3];
-        counter[0]=counter[1]=counter[2]=0;
+        double counter[K];
+        for(int i=0; i < K; i++){
+            counter[i] = 0;
+        }
         for(int n = 0; n < PCL.points.size(); n++){
             counter[int(PCL.channels[0].values[n])]++;
             clusterCenters[int(PCL.channels[0].values[n])].x += PCL.points[n].x;
