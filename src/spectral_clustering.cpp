@@ -40,6 +40,9 @@ geometry_msgs::Point32 V2P3(Eigen::Vector3d vector){
     return point;
 }
 sensor_msgs::PointCloud KmeansforSpectralClustering(sensor_msgs::PointCloud PCL){
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
+
     //Initialization
     int K = 25;//number of means
     //int growthParam = 1;
@@ -64,11 +67,11 @@ sensor_msgs::PointCloud KmeansforSpectralClustering(sensor_msgs::PointCloud PCL)
         clusterCenters[k].resize(Dimension);
         int randomIndex = floor(rand()/double(RAND_MAX)*PCL.points.size());
         for(int n = 0; n <Dimension; n++){
-            //clusterCenters[k](n) = PCL.channels[n].values[randomIndex];
-            clusterCenters[k](n) = rand()/double(RAND_MAX)*(maxValue[n] - minValue[n]) + minValue[n];
-            ROS_INFO("num is:%f,  rand is: %f ",clusterCenters[k](n),rand()/double(RAND_MAX));
+            clusterCenters[k](n) = PCL.channels[n].values[randomIndex];
+            //clusterCenters[k](n) = rand()/double(RAND_MAX)*(maxValue[n] - minValue[n]) + minValue[n];
+            //ROS_INFO("num is:%f,  rand is: %f ",clusterCenters[k](n),rand()/double(RAND_MAX));
         }
-        ROS_INFO("The center of cluster is %f,%f,%f ",clusterCenters[k](0),clusterCenters[k](1),clusterCenters[k](2));
+        //ROS_INFO("The center of cluster is %f,%f,%f ",clusterCenters[k](0),clusterCenters[k](1),clusterCenters[k](2));
     }
     double error = INFINITY;
     vector<Eigen::VectorXd> lastClusterCenters;
@@ -113,11 +116,8 @@ sensor_msgs::PointCloud KmeansforSpectralClustering(sensor_msgs::PointCloud PCL)
         }
         for(int i = 0; i < clusterCenters.size(); i++){
             if(counter[i]==0){
-//                int randomIndex = floor(rand()/double(RAND_MAX)*PCL.points.size());
-//                for(int n = 0; n <Dimension; n++){
-//                    //clusterCenters[i](n) = PCL.channels[n].values[randomIndex];
-//                    clusterCenters[i](n) = rand()/double(RAND_MAX)*(maxValue[n] - minValue[n]) + minValue[n];
-//                }
+                clusterCenters.erase(clusterCenters.begin()+i);
+                i--;
                 continue;
             }
             for(int j = 0; j <Dimension; j++){
@@ -133,6 +133,8 @@ sensor_msgs::PointCloud KmeansforSpectralClustering(sensor_msgs::PointCloud PCL)
 //            counter[0] = counter[0]*counter[i];
 //        }
     }
+    endTime = clock();//计时结束
+    cout << "The K-means run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     return PCL;
 }
 
@@ -202,15 +204,21 @@ sensor_msgs::PointCloud spectralClustering(sensor_msgs::PointCloud PCL){
     I.setIdentity();
     //L = D - W;
     L = I - D.inverse()*W;
+    endTime = clock();//计时结束
+    cout << "The Laplacian construction finish time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
     //Use SVD to avoid Complex eigenvalue?
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(L, Eigen::ComputeThinU | Eigen::ComputeThinV );
 
     //Eigen's eigen vecotors is normalized to 1
     Eigen::MatrixXd V = svd.matrixV();
     Eigen::MatrixXd Singlr = svd.singularValues();
+    cout<<Singlr<<endl;
+    endTime = clock();//计时结束
+    cout << "The SVD finish time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     /*open Channels*/
-    int numOfClustering = 3;
+    int numOfClustering = 2;
     //cout<<V.block(0,V.cols()-3,V.rows(),3)<<endl;
     PCL.channels.resize(numOfClustering);
     string str;
@@ -223,8 +231,9 @@ sensor_msgs::PointCloud spectralClustering(sensor_msgs::PointCloud PCL){
             PCL.channels[k].values[i] = V(i,V.cols()-k-1);
         }
     }
+    endTime = clock();//计时结束
+    cout << "The Channel open time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     /*Kmeans Clustering*/
-    ROS_INFO("kmeans");
     return KmeansforSpectralClustering(PCL);
 }
