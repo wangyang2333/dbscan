@@ -515,7 +515,7 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     startTime = clock();//计时开始
     tree_cloud_pub.publish(spectralClustering(output));
     endTime = clock();//计时结束
-    cout << "The gmmEM run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    cout << "The spectralClustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 //    //Convert sensor_msgs::PointCloud to my_own::point
 //    int counter = 0;

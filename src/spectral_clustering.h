@@ -6,10 +6,6 @@
 #define SRC_SPECTRAL_CLUSTERING_H
 
 
-#ifndef SRC_GMM_EM_H
-#define SRC_GMM_EM_H
-
-
 #include <ros/ros.h>
 #include <iostream>
 #include <sensor_msgs/PointCloud.h>
@@ -23,6 +19,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include "octree_nn.h"
 
 using namespace std;
 sensor_msgs::PointCloud spectralClustering(sensor_msgs::PointCloud PCL);

@@ -12,8 +12,11 @@
 
 using namespace std;
 
-//定义八叉树节点类
+extern vector<vector<double>> resultVector2;
+extern vector<double> worstDistance2;
+extern vector<int> resultIndex;
 
+//定义八叉树节点类
 struct OctreeNode
 {
     OctreeNode* children[8];
@@ -32,6 +35,11 @@ struct OctreeNode
     }
 
 };
+OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
+                        double extent, vector<int>& point_indice, int leafsize, double min_extent);
+
+bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k);
+void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL);
 
 void OCTREE_NN(sensor_msgs::PointCloud& PCL);
 

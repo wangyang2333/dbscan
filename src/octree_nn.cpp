@@ -4,8 +4,10 @@
 
 #include "octree_nn.h"
 
+//定义八叉树节点类
 vector<vector<double>> resultVector2;
 vector<double> worstDistance2;
+vector<int> resultIndex;
 
 //创建八叉树
 OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
@@ -89,12 +91,13 @@ double measureDistance2(vector<double> point1, vector<double> point2, unsigned m
     }
 }
 
-void addToWorstList2(vector<double> toBeAdded, vector<double> goal, int k){
+void addToWorstList2(vector<double> toBeAdded, vector<double> goal, int index){
     auto maxPosition = max_element(worstDistance2.begin(), worstDistance2.end());
     double currentDistance  = measureDistance2(toBeAdded, goal, 0);
     if (measureDistance2(toBeAdded, goal, 0) < *maxPosition ){
         resultVector2[maxPosition - worstDistance2.begin()] = toBeAdded;
         worstDistance2[maxPosition - worstDistance2.begin()] = currentDistance;
+        resultIndex[maxPosition - worstDistance2.begin()] = index;
     }
     return;
 }
@@ -139,6 +142,7 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
     if(resultVector2.empty()){
         resultVector2.resize(k);
         worstDistance2.resize(k);
+        resultIndex.resize(k);
         for(int i = 0; i < worstDistance2.size(); i++){//慎用auto！
             worstDistance2[i] = INFINITY;//TODO:write deault vector.
         }
@@ -146,6 +150,9 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
             resultVector2[i].push_back(0);
             resultVector2[i].push_back(0);
             resultVector2[i].push_back(0);
+        }
+        for(int i = 0; i < resultIndex.size(); i++){
+            resultIndex[i]=-1;
         }
     }
     if(root==NULL)return false;
@@ -155,7 +162,7 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
             toBeAdded.push_back(PCL.points[root->point_indice[i]].x);
             toBeAdded.push_back(PCL.points[root->point_indice[i]].y);
             toBeAdded.push_back(PCL.points[root->point_indice[i]].z);
-            addToWorstList2( toBeAdded,goal, k);
+            addToWorstList2( toBeAdded,goal, root->point_indice[i]);
         }
         return inside(goal, root);
     }
@@ -216,6 +223,7 @@ void OCTREE_NN(sensor_msgs::PointCloud& PCL){
     cout << "The run Octree search time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     for(int i = 0; i < resultVector2.size(); i++){
         cout<<"x="<<resultVector2[i][0]<<",y="<<resultVector2[i][1]<<",z="<<resultVector2[i][2]<<endl;
+        cout<<resultIndex[i]<<endl;
     }
 }
 
