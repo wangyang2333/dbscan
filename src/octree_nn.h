@@ -12,10 +12,6 @@
 
 using namespace std;
 
-extern vector<vector<double>> resultVector2;
-extern vector<double> worstDistance2;
-extern vector<int> resultIndex;
-
 //定义八叉树节点类
 struct OctreeNode
 {
@@ -35,13 +31,30 @@ struct OctreeNode
     }
 
 };
-OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
-                        double extent, vector<int>& point_indice, int leafsize, double min_extent);
 
-bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k);
-void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL);
+class OctreeDriver{
+private:
+    double measureDistance(vector<double> point1, vector<double> point2, unsigned method);
+    void addToWorstList(vector<double> toBeAdded, vector<double> goal, int index);
+    void addToWorstListRadiusNN(vector<double> toBeAdded, vector<double> goal, int index);
+    bool inside(vector<double> goal, OctreeNode *root);
+    bool overlap(vector<double> goal, OctreeNode *root);
+    vector<vector<double>> resultVector;
+    vector<double> worstDistance;
+    vector<int> resultIndex;
+public:
+    OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
+                            double extent, vector<int>& point_indice, int leafsize, double min_extent);
+    bool searchOctreeRadiusNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, double r);
+    bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k);
+    void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL);
+    void OCTREE_NN(sensor_msgs::PointCloud& PCL);
+    vector<vector<double>> getResultVector(){return resultVector;}
+    vector<double> getWorstDistance(){return worstDistance;}
+    vector<int> getResultIndex(){return resultIndex;};
+};
 
-void OCTREE_NN(sensor_msgs::PointCloud& PCL);
+
 
 
 #endif //SRC_OCTREE_NN_H

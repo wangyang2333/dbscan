@@ -4,14 +4,9 @@
 
 #include "octree_nn.h"
 
-//定义八叉树节点类
-vector<vector<double>> resultVector2;
-vector<double> worstDistance2;
-vector<int> resultIndex;
-
 //创建八叉树
-OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
-        double extent, vector<int>& point_indice, int leafsize, double min_extent){
+OctreeNode* OctreeDriver::buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<double> center,
+                                      double extent, vector<int>& point_indice, int leafsize, double min_extent){
     if(point_indice.size()==0) return NULL;
     if(root==NULL) root = new OctreeNode(center, extent, point_indice, false);
     if(point_indice.size()<= leafsize || extent <= min_extent) root->isLeaf = true;
@@ -39,7 +34,7 @@ OctreeNode* buildOctree(OctreeNode* root, sensor_msgs::PointCloud& PCL, vector<d
     return root;
 }
 
-void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL)
+void OctreeDriver::printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL)
 {
     if(root->isLeaf){
         for(int i = 0; i < root->point_indice.size(); i++){
@@ -56,7 +51,7 @@ void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL)
     }
 }
 
-double measureDistance2(vector<double> point1, vector<double> point2, unsigned method)
+double OctreeDriver::measureDistance(vector<double> point1, vector<double> point2, unsigned method)
 {
     if (point1.size() != point2.size())
     {
@@ -91,21 +86,31 @@ double measureDistance2(vector<double> point1, vector<double> point2, unsigned m
     }
 }
 
-void addToWorstList2(vector<double> toBeAdded, vector<double> goal, int index){
-    auto maxPosition = max_element(worstDistance2.begin(), worstDistance2.end());
-    double currentDistance  = measureDistance2(toBeAdded, goal, 0);
-    if (measureDistance2(toBeAdded, goal, 0) < *maxPosition ){
-        resultVector2[maxPosition - worstDistance2.begin()] = toBeAdded;
-        worstDistance2[maxPosition - worstDistance2.begin()] = currentDistance;
-        resultIndex[maxPosition - worstDistance2.begin()] = index;
+void OctreeDriver::addToWorstList(vector<double> toBeAdded, vector<double> goal, int index){
+    auto maxPosition = max_element(worstDistance.begin(), worstDistance.end());
+    double currentDistance  = measureDistance(toBeAdded, goal, 0);
+    if (measureDistance(toBeAdded, goal, 0) < *maxPosition ){
+        resultVector[maxPosition - worstDistance.begin()] = toBeAdded;
+        worstDistance[maxPosition - worstDistance.begin()] = currentDistance;
+        resultIndex[maxPosition - worstDistance.begin()] = index;
+    }
+    return;
+}
+
+void OctreeDriver::addToWorstListRadiusNN(vector<double> toBeAdded, vector<double> goal, int index){
+    auto maxPosition = max_element(worstDistance.begin(), worstDistance.end());
+    double currentDistance  = measureDistance(toBeAdded, goal, 0);
+    if (measureDistance(toBeAdded, goal, 0) < *maxPosition ){
+        resultVector.push_back(toBeAdded);
+        resultIndex.push_back(index);
     }
     return;
 }
 
 
-bool inside(vector<double> goal, OctreeNode *root){
+bool OctreeDriver::inside(vector<double> goal, OctreeNode *root){
     double offset;
-    auto maxPosition = max_element(worstDistance2.begin(), worstDistance2.end());
+    auto maxPosition = max_element(worstDistance.begin(), worstDistance.end());
     for(int i = 0; i < 3; i++){
         offset = abs(root->center[i] - goal[i]) + *maxPosition;
         if(offset > root->extent)return false;
@@ -113,10 +118,10 @@ bool inside(vector<double> goal, OctreeNode *root){
     return true;
 }
 
-bool overlap(vector<double> goal, OctreeNode *root){
+bool OctreeDriver::overlap(vector<double> goal, OctreeNode *root){
     vector<double> query_offset;
 
-    auto maxPosition = max_element(worstDistance2.begin(), worstDistance2.end());
+    auto maxPosition = max_element(worstDistance.begin(), worstDistance.end());
     for(int i = 0; i < 3; i++){
         query_offset.push_back(abs(root->center[i] - goal[i]));
     }
@@ -138,18 +143,18 @@ bool overlap(vector<double> goal, OctreeNode *root){
     return (x_diff * x_diff + y_diff * y_diff + z_diff * z_diff < *maxPosition * *maxPosition);
 }
 
-bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k){
-    if(resultVector2.empty()){
-        resultVector2.resize(k);
-        worstDistance2.resize(k);
+bool OctreeDriver::searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k){
+    if(resultVector.empty()){
+        resultVector.resize(k);
+        worstDistance.resize(k);
         resultIndex.resize(k);
-        for(int i = 0; i < worstDistance2.size(); i++){//慎用auto！
-            worstDistance2[i] = INFINITY;//TODO:write deault vector.
+        for(int i = 0; i < worstDistance.size(); i++){//慎用auto！
+            worstDistance[i] = INFINITY;//TODO:write deault vector.
         }
-        for(int i = 0; i < resultVector2.size(); i++){
-            resultVector2[i].push_back(0);
-            resultVector2[i].push_back(0);
-            resultVector2[i].push_back(0);
+        for(int i = 0; i < resultVector.size(); i++){
+            resultVector[i].push_back(0);
+            resultVector[i].push_back(0);
+            resultVector[i].push_back(0);
         }
         for(int i = 0; i < resultIndex.size(); i++){
             resultIndex[i]=-1;
@@ -162,7 +167,7 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
             toBeAdded.push_back(PCL.points[root->point_indice[i]].x);
             toBeAdded.push_back(PCL.points[root->point_indice[i]].y);
             toBeAdded.push_back(PCL.points[root->point_indice[i]].z);
-            addToWorstList2( toBeAdded,goal, root->point_indice[i]);
+            addToWorstList(toBeAdded, goal, root->point_indice[i]);
         }
         return inside(goal, root);
     }
@@ -179,7 +184,35 @@ bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNod
     return inside(goal, root);
 }
 
-void OCTREE_NN(sensor_msgs::PointCloud& PCL){
+bool OctreeDriver::searchOctreeRadiusNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, double r){
+    if(resultVector.empty()){
+        worstDistance.resize(1, r);
+    }
+    if(root==NULL)return false;
+    if(root->isLeaf && root->point_indice.size() > 0){
+        for(int i = 0; i < root->point_indice.size(); i++){
+            vector<double> toBeAdded;
+            toBeAdded.push_back(PCL.points[root->point_indice[i]].x);
+            toBeAdded.push_back(PCL.points[root->point_indice[i]].y);
+            toBeAdded.push_back(PCL.points[root->point_indice[i]].z);
+            addToWorstListRadiusNN(toBeAdded, goal, root->point_indice[i]);
+        }
+        return inside(goal, root);
+    }
+    int morton_code = 0;
+    if(goal[0] > root->center[0])morton_code = morton_code|1;
+    if(goal[1] > root->center[1])morton_code = morton_code|2;
+    if(goal[2] > root->center[2])morton_code = morton_code|4;
+    if(searchOctreeRadiusNN(goal, PCL, root->children[morton_code], r))return true;
+    for(int i = 0; i < 8; i++){
+        if(i == morton_code || root->children[i] == NULL)continue;
+        if(overlap(goal,root->children[i])== false)continue;
+        if(searchOctreeRadiusNN(goal, PCL, root->children[i], r))return true;
+    }
+    return inside(goal, root);
+}
+
+void OctreeDriver::OCTREE_NN(sensor_msgs::PointCloud& PCL){
     ROS_INFO("There is all %d point(s).",int(PCL.points.size()));
     double max_x=-INFINITY, max_y=-INFINITY, max_z=-INFINITY, min_x =INFINITY, min_y=INFINITY, min_z=INFINITY;
     for(int i = 0; i < PCL.points.size();  i++ ){
@@ -218,11 +251,12 @@ void OCTREE_NN(sensor_msgs::PointCloud& PCL){
     goal.push_back(-3.3);
     //printOctree(root, PCL);
     startTime = clock();//计时开始
-    searchOctreeNN(goal, PCL, root, 3);
+    //searchOctreeNN(goal, PCL, root, 3);
+    searchOctreeRadiusNN(goal, PCL, root, 4.0);
     endTime = clock();//计时结束
     cout << "The run Octree search time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
-    for(int i = 0; i < resultVector2.size(); i++){
-        cout<<"x="<<resultVector2[i][0]<<",y="<<resultVector2[i][1]<<",z="<<resultVector2[i][2]<<endl;
+    for(int i = 0; i < resultVector.size(); i++){
+        cout<<"x="<<resultVector[i][0]<<",y="<<resultVector[i][1]<<",z="<<resultVector[i][2]<<endl;
         cout<<resultIndex[i]<<endl;
     }
 }
