@@ -39,6 +39,7 @@ private:
     void addToWorstListRadiusNN(vector<double> toBeAdded, vector<double> goal, int index);
     bool inside(vector<double> goal, OctreeNode *root);
     bool overlap(vector<double> goal, OctreeNode *root);
+
     vector<vector<double>> resultVector;
     vector<double> worstDistance;
     vector<int> resultIndex;
@@ -48,10 +49,26 @@ public:
     bool searchOctreeRadiusNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, double r);
     bool searchOctreeNN(vector<double> goal, sensor_msgs::PointCloud& PCL, OctreeNode *root, int k);
     void printOctree(OctreeNode *root, sensor_msgs::PointCloud& PCL);
-    void OCTREE_NN(sensor_msgs::PointCloud& PCL);
+    void octreeNNdemo(sensor_msgs::PointCloud& PCL);
+    void octreeConstructFromPCL(sensor_msgs::PointCloud& PCL);
+    vector<double> P2stdV(geometry_msgs::Point32 point){
+        vector<double> vector;
+        vector.resize(3);
+        vector[0] = point.x;
+        vector[1] = point.y;
+        vector[2] = point.z;
+        return vector;
+    }
     vector<vector<double>> getResultVector(){return resultVector;}
     vector<double> getWorstDistance(){return worstDistance;}
     vector<int> getResultIndex(){return resultIndex;};
+    void clearResult(){
+        resultVector.clear();
+        worstDistance.clear();
+        resultIndex.clear();
+    }
+
+    OctreeNode* root;
 };
 
 
