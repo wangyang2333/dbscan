@@ -26,6 +26,7 @@ void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<in
             clusterVector(nextResult, nextIndex, currentCluster, PCL);
         }else{
             PCL.channels[visited].values[currentIndex[i]] = 1.0;
+            PCL.channels[cluster].values[currentIndex[i]] = currentCluster;
             PCL.channels[type].values[currentIndex[i]] = border;
         }
     }

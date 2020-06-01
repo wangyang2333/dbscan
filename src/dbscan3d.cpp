@@ -29,6 +29,7 @@
 //#include "kmeans.h"
 //#include "gmm_EM.h"
 //#include "spectral_clustering.h"
+#include "groundRemovalRANSAC.h"
 #include "dbscan_clustering.h"
 
 using namespace cv;
@@ -44,6 +45,16 @@ double height_max;
 double height_min;
 int MinPts;
 double EPS, tree_residual, tree_radius_max, tree_radius_min;
+
+double groundZMax;
+double groundZMin;
+double inlierRatio;
+int sampleNum;
+double confidence;
+double inlinerThreshold;
+double ratioCondition;
+double upperBorder;
+
 
 class point{
 public:
@@ -103,14 +114,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy�
     endTime = clock();//计时结束
     cout << "The DBSCAN Clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //TODO: remove little cluster and add Residual
-
-
-
-    //三维地卡尔坐标系中的ceres优化树心轴。
-    //对每个cluster进行优化的for
-
-
+    /*Remove little cluster and add Residual*/
     auto ClusterBegin = dataset.channels[DBscanDriver::cluster].values.begin();
     auto ClusterEnd = dataset.channels[DBscanDriver::cluster].values.end();
     int maxCluster = (int)*max_element(ClusterBegin, ClusterEnd);
@@ -168,7 +172,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy�
             //Final good tree output
             std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
         }else{
-            //TODO:UNVISUAL TONOISE
+            //UNVISUAL NOISE
             for(int k = 0; k < currentClusterIdx[j].size(); k++){
                 dataset.channels[DBscanDriver::type].values[currentClusterIdx[j][k]] = DBscanDriver::strange;
                 dataset.channels[DBscanDriver::cluster].values[currentClusterIdx[j][k]] = 0.0;
@@ -240,21 +244,48 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    endTime = clock();//计时结束
 //    cout << "The spectralClustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //Convert sensor_msgs::PointCloud to my_own::point
-    int counter = 0;
-    sensor_msgs::PointCloud dataset;
-    dataset.header = output.header;
-    for(auto pt_iter : output.points){
-        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
-            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
-                if(pt_iter.z >= height_min)
-                    if(pt_iter.z <= height_max){
-                        counter++;
-                        dataset.points.push_back(pt_iter);
-                    }
+    //test RANSAC BSCAN
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
+    ransacDriver oldDriver;
+
+    oldDriver.setGroundZMaxAndMin(groundZMax, groundZMin);
+    oldDriver.setInlinerRatio(inlierRatio);
+    oldDriver.setSampleNum(sampleNum);
+    oldDriver.setConfidence(confidence);
+    oldDriver.setInlinerThreshold(inlinerThreshold);
+    oldDriver.setRatioCondition(ratioCondition);
+    oldDriver.setUpperBorder(upperBorder);
+
+    oldDriver.groundRemove(output);
+    //tree_cloud_pub.publish(oldDriver.PCLforOutput);
+    endTime = clock();//计时结束
+    cout << "The RANSAC run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
+        if(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values[i] == 1){
+            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
+            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
+            i--;
+        }
     }
-    cout<<"dataset_size: "<<dataset.points.size() << endl;
-    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+    sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
+
+//    //REAL DBSCAN
+//    int counter = 0;
+//    sensor_msgs::PointCloud dataset;
+//    dataset.header = output.header;
+//    for(auto pt_iter : output.points){
+//        if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) <= (distance_max * distance_max))
+//            if((pt_iter.x * pt_iter.x + pt_iter.y * pt_iter.y) >= (distance_max * distance_min))
+//                if(pt_iter.z >= height_min)
+//                    if(pt_iter.z <= height_max){
+//                        counter++;
+//                        dataset.points.push_back(pt_iter);
+//                    }
+//    }
+//    cout<<"dataset_size: "<<dataset.points.size() << endl;
+//    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
 
     DBSCAN(dataset,EPS,MinPts);
 }
@@ -286,6 +317,16 @@ int main(int argc, char** argv) {
     ros::param::get("~distance_min",distance_min);
     ros::param::get("~height_max",height_max);
     ros::param::get("~height_min",height_min);
+
+    ros::param::get("~groundZMax",groundZMax);
+    ros::param::get("~groundZMin",groundZMin);
+    ros::param::get("~inlierRatio",inlierRatio);
+    ros::param::get("~confidence",confidence);
+    ros::param::get("~inlinerThreshold",inlinerThreshold);
+    ros::param::get("~ratioCondition",ratioCondition);
+    ros::param::get("~upperBorder",upperBorder);
+    ros::param::get("~sampleNum",sampleNum);
+
 
 
     cout<<"scan_range:"<<scan_range<<endl;
