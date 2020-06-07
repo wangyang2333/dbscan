@@ -5,9 +5,8 @@
 #include "groundRemovalRANSAC.h"
 
 
-//整一个块ransac左右
 
-
+/*带左右双地面的会导致右边的地面往上翘，前面地面去除不干净，需要切除更多的数目*/
 void ransacDriver::groundRemoveSided(sensor_msgs::PointCloud &PCLin) {
 
     PCLforOutput = PCLin;

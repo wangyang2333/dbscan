@@ -8,8 +8,6 @@ void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<in
     for(int i = 0; i < currentVector.size(); i++){
         /*Skip the visited point*/
         if(PCL.channels[visited].values[currentIndex[i]] == 1.0){
-            //for(int j =0; j<= PCL.points.size(); j++)cout<<PCL.channels[visited].values[j];
-            //ROS_ERROR("skip");//TODO:shoundnot skip!
             continue;
         }
         /*Do radiusNN on Octree*/
@@ -30,10 +28,12 @@ void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<in
             PCL.channels[type].values[currentIndex[i]] = border;
         }
     }
+    return;
 }
 
 void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
     /*Open PCL channels*/
+    ROS_ERROR("vector: %f,%d", EPS, MinPts);
     PCLforOutput = PCL;
     PCLforOutput.channels.clear();
     PCLforOutput.channels.resize(3);
@@ -56,6 +56,8 @@ void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
         vector<vector<double>> currentResult = oldDriver.getResultVector();
         vector<int> currentIndex = oldDriver.getResultIndex();
         oldDriver.clearResult();
+
+        //ROS_ERROR("size:%d",(int)currentResult.size());
         /*Decide the type*/
         if(currentResult.size() > MinPts){
             PCLforOutput.channels[visited].values[i] = 1.0;
@@ -68,5 +70,7 @@ void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
             PCLforOutput.channels[type].values[i] = noise;
         }
     }
+    for(int i = 0; i < PCLforOutput.points.size(); i++){cout<<PCLforOutput.channels[DBscanDriver::cluster].values[i];}
+
     return;
 }

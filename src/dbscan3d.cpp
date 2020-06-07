@@ -13,10 +13,9 @@
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <mutex>
-#include <thread>
+
 #include <ceres/ceres.h>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+
 #include <opencv2/core/eigen.hpp>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/point_cloud_conversion.h>
@@ -38,7 +37,7 @@ using namespace std;
 std::mutex scan_lock;
 double scan_num360;
 double scan_range;
-double min_cluster;
+int min_cluster;
 double distance_max;
 double distance_min;
 double height_max;
@@ -102,15 +101,28 @@ ros::Publisher cloud_pub;
 ros::Publisher tree_cloud_pub;
 ros::Publisher circle_pub;
 ros::Publisher tree_visual_cloud_pub;
-sensor_msgs::LaserScan centers ;
-void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy密度来进行聚类。
-    //test DBscan
+sensor_msgs::LaserScan centers;
+
+void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy密度来进行聚类。
+    /*Project 3D to 2D*/
+    sensor_msgs::PointCloud tempz = dataset;
+    sensor_msgs::PointCloud tempTrue = dataset;
+    for(int i = 0; i < tempTrue.points.size(); i++){
+        //自己写的八叉树难以处理某一维度全为0的情况
+        tempTrue.points[i].z = 0.05*rand() / double(RAND_MAX);
+    }
+
+    /*Run DBscan*/
     clock_t startTime,endTime;
     startTime = clock();//计时开始
     DBscanDriver oldDriver;
-    oldDriver.setEPSandMinPts(EPS, MinPts);
-    oldDriver.dbscanClustering(dataset);
-    dataset = oldDriver.PCLforOutput;
+    oldDriver.setEPSandMinPts(eps, minpts);
+    oldDriver.dbscanClustering(tempTrue);
+    dataset.channels = oldDriver.PCLforOutput.channels;
+
+
+
+
     endTime = clock();//计时结束
     cout << "The DBSCAN Clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
@@ -125,7 +137,6 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy�
 
     for(int j = 0; j < dataset.points.size(); j++){
         currentClusterIdx[(int)dataset.channels[DBscanDriver::cluster].values[j]].push_back(j);
-
     }
     /*Remove little cluster*/
     for(int j = 1; j < currentClusterIdx.size(); j++){
@@ -163,7 +174,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy�
         Solve(options, &problem, &summary);
         //std::cout << summary.BriefReport() << "\n";
         r= abs(r);
-        std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<"\n";
+        std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<" residual: "<<summary.final_cost<<"\n";
         //push the result to output vector
         Point3f temp3d(x, y, r);
 
@@ -178,9 +189,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double Eps,int MinPts){//按照xy�
                 dataset.channels[DBscanDriver::cluster].values[currentClusterIdx[j][k]] = 0.0;
             }
         }
-
     }
-
     tree_cloud_pub.publish(dataset);
 }
 
@@ -269,6 +278,16 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
             i--;
         }
     }
+
+
+    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
+        if(oldDriver.PCLforOutput.points[i].z >= 2.3 + height_max){
+            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
+            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
+            i--;
+        }
+    }
+
     sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
 
 //    //REAL DBSCAN
