@@ -30,6 +30,7 @@
 //#include "spectral_clustering.h"
 #include "groundRemovalRANSAC.h"
 #include "dbscan_clustering.h"
+#include "fpfh_pcl.h"
 
 using namespace cv;
 using namespace std;
@@ -232,6 +233,14 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    endTime = clock();//计时结束
 //    cout << "The run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
+    //test FPFH
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
+    FPFHDriver oldDriver;
+    oldDriver.FPFH(output);
+    endTime = clock();//计时结束
+    cout << "The FPFH run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
 //    //test Kmeans
 //    clock_t startTime,endTime;
 //    startTime = clock();//计时开始
@@ -253,44 +262,45 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    endTime = clock();//计时结束
 //    cout << "The spectralClustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-    //test RANSAC BSCAN
-    clock_t startTime,endTime;
-    startTime = clock();//计时开始
-    ransacDriver oldDriver;
+//    //RANSAC BSCAN
+//    clock_t startTime,endTime;
+//    startTime = clock();//计时开始
+//    ransacDriver oldDriver;
+//
+//    oldDriver.setGroundZMaxAndMin(groundZMax, groundZMin);
+//    oldDriver.setInlinerRatio(inlierRatio);
+//    oldDriver.setSampleNum(sampleNum);
+//    oldDriver.setConfidence(confidence);
+//    oldDriver.setInlinerThreshold(inlinerThreshold);
+//    oldDriver.setRatioCondition(ratioCondition);
+//    oldDriver.setUpperBorder(upperBorder);
+//
+//    oldDriver.groundRemove(output);
+//    //tree_cloud_pub.publish(oldDriver.PCLforOutput);
+//    endTime = clock();//计时结束
+//    cout << "The RANSAC run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+//
+//    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
+//        if(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values[i] == 1){
+//            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
+//            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
+//            i--;
+//        }
+//    }
+//
+//
+//    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
+//        if(oldDriver.PCLforOutput.points[i].z >= 2.3 + height_max){
+//            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
+//            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
+//            i--;
+//        }
+//    }
+//
+//    sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
+//    DBSCAN(dataset,EPS,MinPts);
 
-    oldDriver.setGroundZMaxAndMin(groundZMax, groundZMin);
-    oldDriver.setInlinerRatio(inlierRatio);
-    oldDriver.setSampleNum(sampleNum);
-    oldDriver.setConfidence(confidence);
-    oldDriver.setInlinerThreshold(inlinerThreshold);
-    oldDriver.setRatioCondition(ratioCondition);
-    oldDriver.setUpperBorder(upperBorder);
-
-    oldDriver.groundRemove(output);
-    //tree_cloud_pub.publish(oldDriver.PCLforOutput);
-    endTime = clock();//计时结束
-    cout << "The RANSAC run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
-
-    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
-        if(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values[i] == 1){
-            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
-            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
-            i--;
-        }
-    }
-
-
-    for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
-        if(oldDriver.PCLforOutput.points[i].z >= 2.3 + height_max){
-            oldDriver.PCLforOutput.points.erase(oldDriver.PCLforOutput.points.begin() + i);
-            oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.erase(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values.begin() + i);
-            i--;
-        }
-    }
-
-    sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
-
-//    //REAL DBSCAN
+//    //ORIGINAL DBSCAN
 //    int counter = 0;
 //    sensor_msgs::PointCloud dataset;
 //    dataset.header = output.header;
@@ -305,8 +315,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    }
 //    cout<<"dataset_size: "<<dataset.points.size() << endl;
 //    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
-
-    DBSCAN(dataset,EPS,MinPts);
 }
 
 

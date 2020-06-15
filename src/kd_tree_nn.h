@@ -9,7 +9,6 @@
 #include <iostream>
 #include <sensor_msgs/PointCloud.h>
 #include <ctime>
-#include "kd_tree_nn.h"
 
 #include <pcl/point_cloud.h>
 #include <pcl/octree/octree_search.h>

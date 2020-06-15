@@ -2,8 +2,8 @@
 // Created by xcy on 2020/5/30.
 //
 
-#ifndef SRC_PCAFILTER_H
-#define SRC_PCAFILTER_H
+#ifndef SRC_PCA_FILTER_H
+#define SRC_PCA_FILTER_H
 
 #include <ros/ros.h>
 #include <iostream>
@@ -17,4 +17,4 @@ void PCA_Eigen(sensor_msgs::PointCloud& PCL);
 void Voxel_Filter_Hash(sensor_msgs::PointCloud& PCL);
 
 
-#endif //SRC_PCAFILTER_H
+#endif //SRC_PCA_FILTER_H
