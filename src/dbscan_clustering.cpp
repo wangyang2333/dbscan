@@ -33,7 +33,6 @@ void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<in
 
 void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
     /*Open PCL channels*/
-    ROS_ERROR("vector: %f,%d", EPS, MinPts);
     PCLforOutput = PCL;
     PCLforOutput.channels.clear();
     PCLforOutput.channels.resize(3);
@@ -70,7 +69,7 @@ void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
             PCLforOutput.channels[type].values[i] = noise;
         }
     }
-    for(int i = 0; i < PCLforOutput.points.size(); i++){cout<<PCLforOutput.channels[DBscanDriver::cluster].values[i];}
+//    for(int i = 0; i < PCLforOutput.points.size(); i++){cout<<PCLforOutput.channels[DBscanDriver::cluster].values[i];}
 
     return;
 }

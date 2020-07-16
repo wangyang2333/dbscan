@@ -74,7 +74,7 @@ void FPFHDriver::FPFH(sensor_msgs::PointCloud& PCL){
     ne.setInputCloud(model);
     ne.setSearchMethod(tree);
     ne.setKSearch(10);
-//    ne.setRadiusSearch(0.03);
+    //ne.setRadiusSearch(0.03);
     ne.compute(*normals);
     auto t2 = chrono::steady_clock::now();
     auto dt = chrono::duration_cast<chrono::duration<double> >(t2 - t1).count();
@@ -85,7 +85,7 @@ void FPFHDriver::FPFH(sensor_msgs::PointCloud& PCL){
     fpfh_omp.setInputNormals(normals);
     fpfh_omp.setSearchMethod(tree);
     fpfh_omp.setNumberOfThreads(8);
-    fpfh_omp.setRadiusSearch(0.05);
+    fpfh_omp.setRadiusSearch(0.4);
     fpfh_omp.compute(*fpfhs);
 //    fpfh.setInputCloud(model);
 //    fpfh.setInputNormals(normals);
@@ -110,7 +110,7 @@ void FPFHDriver::FPFH(sensor_msgs::PointCloud& PCL){
         viewer->setBackgroundColor(0, 0, 0);
         viewer->addPointCloud<pcl::PointXYZ>(model, "model");
         viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "model");
-        viewer->addPointCloudNormals<pcl::PointXYZ, pcl::PointNormal>(model, normals, 10, 0.05, "normals");  // display every 1 points, and the scale of the arrow is 10
+        viewer->addPointCloudNormals<pcl::PointXYZ, pcl::PointNormal>(model, normals, 1, 0.1, "normals");  // display every 1 points, and the scale of the arrow is 10
         viewer->addCoordinateSystem(1.0);
         viewer->initCameraParameters();
 

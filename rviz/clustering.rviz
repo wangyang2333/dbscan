@@ -115,19 +115,36 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: rviz/TF
-      Enabled: false
+      Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        base_link:
+          Value: true
+        imu_link:
+          Value: true
+        map:
+          Value: true
+        odom:
+          Value: true
+        velodyne:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        base_link:
+          imu_link:
+            {}
+          velodyne:
+            {}
+        map:
+          odom:
+            {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -143,7 +160,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 82
+      Max Intensity: 76
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
@@ -162,7 +179,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: false
-    Fixed Frame: base_link
+    Fixed Frame: velodyne
     Frame Rate: 30
   Name: root
   Tools:
@@ -183,25 +200,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 24.4508018
+      Distance: 36.5374336
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.750777543
-        Y: -1.00765014
-        Z: 0.643445134
+        X: 1.22132039
+        Y: -1.25479019
+        Z: 0.655252814
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.399796396
+      Pitch: 0.874796987
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.91721511
+      Yaw: 3.15722013
     Saved: ~
 Window Geometry:
   Displays:

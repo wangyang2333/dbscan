@@ -26,7 +26,7 @@ public:
     void setEPSandMinPts(double eps, int minpts){EPS = eps; MinPts = minpts;}
 
     enum {visited = 0 , type = 1, cluster = 2};
-    enum {core = 0, border = 1, noise = 2, little = 3, strange = 4};
+    enum {core = 0, border = 1, noise = 2, little = 3, strange = 4, pass = 5};
 
 };
 
