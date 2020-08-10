@@ -43,11 +43,16 @@ private:
     ros::Publisher landmark_cloud_pub;
     ros::Publisher robot_pose_publisher;
 
-    tf::TransformBroadcaster myTfBr;
+    tf::TransformBroadcaster my_br;
+    tf::TransformListener listener;
+
+    tf::StampedTransform velodyne_to_base;
+    tf::StampedTransform velodyne_to_map;
+
 
     sensor_msgs::PointCloud map_cloud;
 
-    string laser_name;
+    string lidar_name;
     string base_link_name;
     string odom_name;
     string map_name;
@@ -55,7 +60,7 @@ private:
     bool firstTrackFlag;
 public:
     TreeCenterLocalization(){
-        ros::param::get("~laser_name",laser_name);
+        ros::param::get("~laser_name", lidar_name);
         ros::param::get("~base_link_name",base_link_name);
         ros::param::get("~odom_name",odom_name);
         ros::param::get("~map_name",map_name);

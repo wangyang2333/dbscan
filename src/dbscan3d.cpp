@@ -109,6 +109,10 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     /*Project 3D to 2D*/
     sensor_msgs::PointCloud tempz = dataset;
     sensor_msgs::PointCloud tempTrue = dataset;
+
+    sensor_msgs::PointCloud treeCenters = dataset;
+    treeCenters.points.clear();
+    treeCenters.channels.clear();
     for(int i = 0; i < tempTrue.points.size(); i++){
         //自己写的八叉树难以处理某一维度全为0的情况
         tempTrue.points[i].z = 0.05*rand() / double(RAND_MAX);
@@ -180,9 +184,13 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
         Point3f temp3d(x, y, r);
 
         if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){
-            //TODO:VISUAL tree and PUBLISH CENTER
             //Final good tree output
             std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
+            geometry_msgs::Point32 treeCenterPt;
+            treeCenterPt.x = x;
+            treeCenterPt.y = y;
+            treeCenterPt.z = r;
+            treeCenters.points.push_back(treeCenterPt);
 //            //Check If Pass Through or Not
 //            passThroughTesting(dataset, currentClusterIdx[j]);
         }else{
@@ -193,7 +201,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
             }
         }
     }
-    tree_cloud_pub.publish(dataset);
+    tree_visual_cloud_pub.publish(dataset);
+    tree_cloud_pub.publish(treeCenters);
 }
 
 
