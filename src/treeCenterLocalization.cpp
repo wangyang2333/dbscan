@@ -47,9 +47,11 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         tf::Matrix3x3 tempMat3x3;
         tf::Vector3  tempVec3;
         tf::Quaternion tempQ;
-        Eigen::Matrix4f transformation = icp.getFinalTransformation ();
-        tf::matrixEigenToTF(transformation.block<3,3>(0,0), tempMat3x3);
-        tf::vectorEigenToTF(transformation.block<3,1>(0,3), tempVec3);
+        Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
+        Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
+        Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
+        tf::matrixEigenToTF(tempRotation, tempMat3x3);
+        tf::vectorEigenToTF(tempTranslation, tempVec3);
         velodyne_to_map.setOrigin(tempVec3);
         tempMat3x3.getRotation(tempQ);
         velodyne_to_map.setRotation(tempQ);
