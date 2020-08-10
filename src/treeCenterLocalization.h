@@ -24,6 +24,12 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include <sensor_msgs/point_cloud_conversion.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/registration/icp.h>
+
+
+
 #include <geometry_msgs/PointStamped.h>
 
 #include <dlib/svm_threaded.h>
@@ -44,9 +50,9 @@ private:
     ros::Publisher robot_pose_publisher;
 
     tf::TransformBroadcaster my_br;
-    tf::TransformListener listener;
+//    tf::TransformListener listener;
 
-    tf::StampedTransform velodyne_to_base;
+//    tf::StampedTransform velodyne_to_base;
     tf::StampedTransform velodyne_to_map;
 
 
