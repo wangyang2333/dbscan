@@ -57,5 +57,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         velodyne_to_map.setRotation(tempQ);
         my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
         //To Edit Map (landmark form velodyne to map)只能手算吗？
+        /*To find new coming point*/
+        
     }
 }

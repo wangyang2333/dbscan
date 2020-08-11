@@ -158,7 +158,6 @@ target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )
 
 
-
 add_executable(sendgoal2 src/sendgoal2.cpp)
 target_link_libraries( sendgoal2 ${OpenCV_LIBS} )
 target_link_libraries( sendgoal2 ${CERES_LIBRARIES} )
@@ -173,12 +172,16 @@ target_link_libraries( tree_tracker dlib::dlib )
 add_executable(localization src/localization.cpp)
 target_link_libraries(localization tree_tracker)
 
-add_library(treeCenterLocalization src/treeCenterLocalization.cpp)
+add_library(treeCenterLocalization src/treeCenterLocalization.cpp )
 target_link_libraries( treeCenterLocalization ${CERES_LIBRARIES} )
 target_link_libraries( treeCenterLocalization dlib::dlib )
 
 add_executable(treeCenterLocalization_node src/treeCenterLocalization_node.cpp)
 target_link_libraries(treeCenterLocalization_node treeCenterLocalization)
+
+add_executable(fake_sensormsg_pointcloud src/fake_sensormsg_pointcloud.cpp)
+add_dependencies(fake_sensormsg_pointcloud ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(fake_sensormsg_pointcloud ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
