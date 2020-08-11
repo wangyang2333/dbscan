@@ -36,6 +36,18 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         icp.setInputCloud (PCL_obsCloud);
         icp.setInputTarget (PCL_mapCloud);
 
+// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+        icp.setMaxCorrespondenceDistance (5);
+// Set the maximum number of iterations (criterion 1)
+        icp.setMaximumIterations (50);
+// Set the transformation epsilon (criterion 2)
+        icp.setTransformationEpsilon (1e-8);
+// Set the euclidean distance difference epsilon (criterion 3)
+        icp.setEuclideanFitnessEpsilon (1);
+        //setUseReciprocalCorrespondences (bool use_reciprocal_correspondence)
+
+
+
         pcl::PointCloud<pcl::PointXYZ> Final;
         icp.align(Final);
 
@@ -52,12 +64,73 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
         tf::matrixEigenToTF(tempRotation, tempMat3x3);
         tf::vectorEigenToTF(tempTranslation, tempVec3);
+        /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
+
         velodyne_to_map.setOrigin(tempVec3);
         tempMat3x3.getRotation(tempQ);
         velodyne_to_map.setRotation(tempQ);
         my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
-        //To Edit Map (landmark form velodyne to map)只能手算吗？
+
+        //To Edit Map (landmark form velodyne to map)
         /*To find new coming point*/
-        
+        sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
+        ptsToBeAddedToMap.channels.resize(1);
+        ptsToBeAddedToMap.channels[0].name = "trackSuccess";
+        ptsToBeAddedToMap.channels[0].values.resize(ptsToBeAddedToMap.points.size());
+
+
+        pcl::Correspondences currentCorrespondences = *icp.correspondences_;
+        for(int i = 0; i < currentCorrespondences.size(); i++){
+            cout<<"i:"<< i <<endl;
+            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+            ptsToBeAddedToMap.channels[0].values[i] = 1;
+        }
+        addPointsToMap(ptsToBeAddedToMap, map_cloud);
     }
+
+    landmark_cloud_pub.publish(map_cloud);
+}
+
+void TreeCenterLocalization::addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map) {
+    map.points.clear();
+    for(int i =0; i < pointsToBeAdded.points.size(); i++){
+        if(pointsToBeAdded.channels[0].values[i] != 1){
+
+        }
+        addOnePtToMap(pointsToBeAdded.points[i]);
+    }
+
+
+}
+
+geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
+    geometry_msgs::PointStamped sourcePointStamped;
+    sourcePointStamped.header.frame_id = sourceFrame;
+    sourcePointStamped.header.stamp = ros::Time();
+
+    sourcePointStamped.point.x = sourcePoint.x;
+    sourcePointStamped.point.y = sourcePoint.y;
+    sourcePointStamped.point.z = sourcePoint.z;
+    geometry_msgs::PointStamped targetPointStamped;
+
+    listener.waitForTransform(sourceFrame, targetFrame, ros::Time(0), ros::Duration(3.0));
+    listener.transformPoint(targetFrame, sourcePointStamped, targetPointStamped);
+
+    geometry_msgs::Point32 pt_out;
+    pt_out.x = targetPointStamped.point.x;
+    pt_out.y = targetPointStamped.point.y;
+    pt_out.z = targetPointStamped.point.z;
+    return pt_out;
+}
+
+void TreeCenterLocalization::addOnePtToMap(geometry_msgs::Point32 new_landmark){
+    //add new tree to map_cloud
+    geometry_msgs::Point32 finalPt;
+    finalPt = changeFrame(new_landmark,lidar_name,map_name);
+    map_cloud.points.push_back(finalPt);
+    //TreeId------map_cloud.channels[0].values.push_back(new_landmark);
+
 }

@@ -50,7 +50,7 @@ private:
     ros::Publisher robot_pose_publisher;
 
     tf::TransformBroadcaster my_br;
-//    tf::TransformListener listener;
+    tf::TransformListener listener;
 
 //    tf::StampedTransform velodyne_to_base;
     tf::StampedTransform velodyne_to_map;
@@ -64,6 +64,10 @@ private:
     string map_name;
 
     bool firstTrackFlag;
+
+    void addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map);
+    geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
+    void addOnePtToMap(geometry_msgs::Point32 new_landmark);
 public:
     TreeCenterLocalization(){
         ros::param::get("~laser_name", lidar_name);
@@ -72,7 +76,7 @@ public:
         ros::param::get("~map_name",map_name);
         landmarkPCL_sub = nh_.subscribe("/tree_center", 1, &TreeCenterLocalization::tree_callback, this);
 
-        landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud", 50);
+        landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);
         robot_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2", 10);
 
         sensor_msgs::PointCloud lanmark_cloud;
@@ -83,6 +87,7 @@ public:
         map_cloud.channels[0].values.clear();
         firstTrackFlag = true;
     }
+
 };
 
 
