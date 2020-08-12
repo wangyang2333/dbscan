@@ -62,6 +62,7 @@ private:
     string base_link_name;
     string odom_name;
     string map_name;
+    double MaxCorrespondenceDistance, MaximumIterations, setTransformationEpsilon,EuclideanFitnessEpsilon;
 
     bool firstTrackFlag;
 
@@ -74,6 +75,12 @@ public:
         ros::param::get("~base_link_name",base_link_name);
         ros::param::get("~odom_name",odom_name);
         ros::param::get("~map_name",map_name);
+
+
+        ros::param::get("~MaxCorrespondenceDistance", MaxCorrespondenceDistance);
+        ros::param::get("~MaximumIterations",MaximumIterations);
+        ros::param::get("~setTransformationEpsilon",setTransformationEpsilon);
+        ros::param::get("~EuclideanFitnessEpsilon",EuclideanFitnessEpsilon);
         landmarkPCL_sub = nh_.subscribe("/tree_center", 1, &TreeCenterLocalization::tree_callback, this);
 
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);

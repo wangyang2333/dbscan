@@ -23,6 +23,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
 
         sensor_msgs::PointCloud2 ROS_PCL2_temp;
         pcl::PCLPointCloud2 PCL_PCL2_temp;
+
         sensor_msgs::convertPointCloudToPointCloud2(map_cloud, ROS_PCL2_temp);
         pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
         pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
@@ -37,16 +38,18 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         icp.setInputTarget (PCL_mapCloud);
 
 // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-        icp.setMaxCorrespondenceDistance (5);
+        icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
 // Set the maximum number of iterations (criterion 1)
-        icp.setMaximumIterations (50);
+        icp.setMaximumIterations (MaximumIterations);
 // Set the transformation epsilon (criterion 2)
-        icp.setTransformationEpsilon (1e-8);
+        icp.setTransformationEpsilon (setTransformationEpsilon);
 // Set the euclidean distance difference epsilon (criterion 3)
-        icp.setEuclideanFitnessEpsilon (1);
-        //setUseReciprocalCorrespondences (bool use_reciprocal_correspondence)
+        icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
 
+//        icp.setRANSACIterations(50);
+//        icp.setRANSACOutlierRejectionThreshold(0.05);
 
+        icp.setUseReciprocalCorrespondences (true);
 
         pcl::PointCloud<pcl::PointXYZ> Final;
         icp.align(Final);
@@ -55,22 +58,24 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         std::cout << "score: " <<icp.getFitnessScore() << std::endl;
         std::cout << icp.getFinalTransformation() << std::endl;
 
-        //Publish TF from velodyne to map
-        tf::Matrix3x3 tempMat3x3;
-        tf::Vector3  tempVec3;
-        tf::Quaternion tempQ;
-        Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
-        Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
-        Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
-        tf::matrixEigenToTF(tempRotation, tempMat3x3);
-        tf::vectorEigenToTF(tempTranslation, tempVec3);
-        /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
-
-        velodyne_to_map.setOrigin(tempVec3);
-        tempMat3x3.getRotation(tempQ);
-        velodyne_to_map.setRotation(tempQ);
-        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
-
+        if(icp.hasConverged()){
+            //Publish TF from velodyne to map
+            tf::Matrix3x3 tempMat3x3;
+            tf::Vector3  tempVec3;
+            tf::Quaternion tempQ;
+            Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
+            Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
+            Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
+            tf::matrixEigenToTF(tempRotation, tempMat3x3);
+            tf::vectorEigenToTF(tempTranslation, tempVec3);
+            /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
+            velodyne_to_map.setOrigin(tempVec3);
+            tempMat3x3.getRotation(tempQ);
+            velodyne_to_map.setRotation(tempQ);
+            my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
+        }else{
+            //TODO:
+        }
         //To Edit Map (landmark form velodyne to map)
         /*To find new coming point*/
         sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
@@ -81,16 +86,15 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
 
         pcl::Correspondences currentCorrespondences = *icp.correspondences_;
         for(int i = 0; i < currentCorrespondences.size(); i++){
-            cout<<"i:"<< i <<endl;
-            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
-            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
-            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
-            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+//            cout<<"i:"<< i <<endl;
+//            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+//            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+//            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+//            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
             ptsToBeAddedToMap.channels[0].values[i] = 1;
         }
         addPointsToMap(ptsToBeAddedToMap, map_cloud);
     }
-
     landmark_cloud_pub.publish(map_cloud);
 }
 
