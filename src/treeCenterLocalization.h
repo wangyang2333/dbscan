@@ -40,6 +40,47 @@
 #define SRC_TREECENTERLOCALIZATION_H
 
 using namespace std;
+
+
+
+class TreeAtlas{
+    friend class TreeCenterLocalization;
+private:
+    sensor_msgs::PointCloud fullLandMarks;
+
+    sensor_msgs::PointCloud localMap;
+    string map_name, lidar_name;
+
+    void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
+                                     const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
+                                     sensor_msgs::PointCloud & cloudOut) const;
+public:
+    TreeAtlas(){
+        fullLandMarks.header.frame_id = map_name;
+        fullLandMarks.channels.resize(1);
+        fullLandMarks.channels[0].name = "tree_id";
+        fullLandMarks.points.clear();
+        fullLandMarks.channels[0].values.clear();
+    }
+    void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
+        map_name = globalFrame;
+        lidar_name = initialPCL.header.frame_id;
+        fullLandMarks.header.frame_id = map_name;
+        fullLandMarks.points = initialPCL.points;
+    }
+    sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
+    void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF);
+    sensor_msgs::PointCloud getFullAtlas(){
+        return fullLandMarks;
+    }
+
+
+
+
+};
+
+
+
 class TreeCenterLocalization {
 private:
     void tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
@@ -55,7 +96,7 @@ private:
     tf::StampedTransform velodyne_to_map;
 
 
-    sensor_msgs::PointCloud map_cloud;
+    TreeAtlas myAtlas;
 
     string lidar_name;
     string base_link_name;
@@ -69,12 +110,10 @@ private:
     geometry_msgs::PoseStamped my_pose;
     ros::Publisher my_pose_publisher;
 
-    void addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map);
+
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
     void addOnePtToMap(geometry_msgs::Point32 new_landmark);
-    void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
-                                                             const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
-                                                             sensor_msgs::PointCloud & cloudOut) const;
+
 public:
     TreeCenterLocalization(){
         ros::param::get("~laser_name", lidar_name);
@@ -92,16 +131,8 @@ public:
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);
         my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 10);
 
-        sensor_msgs::PointCloud lanmark_cloud;
-        map_cloud.header.frame_id = map_name;
-        map_cloud.channels.resize(1);
-        map_cloud.channels[0].name = "tree_id";
-        map_cloud.points.clear();
-        map_cloud.channels[0].values.clear();
         firstTrackFlag = true;
         initialGuessOfICP.setIdentity();
-
-
     }
 
 };

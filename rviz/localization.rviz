@@ -32,7 +32,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud
+    SyncSource: ""
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -61,59 +61,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: false
-        camera_aligned_depth_to_color_frame:
-          Value: true
-        camera_color_frame:
-          Value: true
-        camera_color_optical_frame:
-          Value: true
-        camera_depth_frame:
-          Value: true
-        camera_depth_optical_frame:
-          Value: true
-        camera_link:
-          Value: true
-        camera_mount_link:
-          Value: true
-        ee_link:
-          Value: true
-        foreArm_Link:
-          Value: true
-        imu_link:
-          Value: false
-        knife_link:
-          Value: true
-        map:
-          Value: false
-        map_fuck:
-          Value: true
-        odom:
-          Value: false
-        shoulder_Link:
-          Value: true
-        upperArm_Link:
-          Value: true
-        velodyne:
-          Value: true
-        virtual_camera_color_frame:
-          Value: true
-        wrist1_Link:
-          Value: true
-        wrist2_Link:
-          Value: true
-        wrist3_Link:
-          Value: true
       Marker Scale: 10
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map_fuck:
-          velodyne:
-            {}
+        {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -186,7 +140,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 25.6119518
+      Distance: 45.1370125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1

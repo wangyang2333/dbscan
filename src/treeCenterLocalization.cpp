@@ -8,7 +8,8 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
     //if(first track) build map
     if(firstTrackFlag){
         ROS_WARN("First Track, build map with all points.");
-        map_cloud.points = landmarkPCL->points;
+        myAtlas.atlasIntializationWithPCL(*landmarkPCL, map_name);
+
         firstTrackFlag = false;
         //Read the static TF
 //        listener.waitForTransform(base_link_name, lidar_name, ros::Time(0), ros::Duration(3.0));
@@ -16,6 +17,14 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         //(publish tf from velodyne to map (zero transform))
         velodyne_to_map.setIdentity();
         my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
+
+        my_pose.header.frame_id = map_name;
+        my_pose.header.stamp = ros::Time::now();
+        my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
+        my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
+        my_pose.pose.position.z = 0;
+        tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
+        my_pose_publisher.publish(my_pose);
     }else{
         /*Track with current map*/
         //Transform datatype to use PCL LIB
@@ -25,7 +34,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         sensor_msgs::PointCloud2 ROS_PCL2_temp;
         pcl::PCLPointCloud2 PCL_PCL2_temp;
 
-        sensor_msgs::convertPointCloudToPointCloud2(map_cloud, ROS_PCL2_temp);
+        sensor_msgs::convertPointCloudToPointCloud2(myAtlas.getLocalMapWithTF(velodyne_to_map), ROS_PCL2_temp);
         pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
         pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
 
@@ -104,14 +113,43 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
 //            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
             ptsToBeAddedToMap.channels[0].values[i] = 1;
         }
-        addPointsToMap(ptsToBeAddedToMap, map_cloud);
+        myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
     }
-    landmark_cloud_pub.publish(map_cloud);
+    landmark_cloud_pub.publish(myAtlas.getFullAtlas());
+}
+
+geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
+    geometry_msgs::PointStamped sourcePointStamped;
+    sourcePointStamped.header.frame_id = sourceFrame;
+    sourcePointStamped.header.stamp = ros::Time();
+
+    sourcePointStamped.point.x = sourcePoint.x;
+    sourcePointStamped.point.y = sourcePoint.y;
+    sourcePointStamped.point.z = sourcePoint.z;
+    geometry_msgs::PointStamped targetPointStamped;
+
+    //listener.waitForTransform(targetFrame, sourceFrame, ros::Time(0), ros::Duration(3.0));
+    listener.transformPoint(targetFrame, sourcePointStamped, targetPointStamped);
+
+    geometry_msgs::Point32 pt_out;
+    pt_out.x = targetPointStamped.point.x;
+    pt_out.y = targetPointStamped.point.y;
+    pt_out.z = targetPointStamped.point.z;
+    return pt_out;
+}
+
+void TreeCenterLocalization::addOnePtToMap(geometry_msgs::Point32 new_landmark){
+    //add new tree to map_cloud
+    geometry_msgs::Point32 finalPt;
+    finalPt = changeFrame(new_landmark,lidar_name,map_name);
+    myAtlas.fullLandMarks.points.push_back(finalPt);
+    //TreeId------map_cloud.channels[0].values.push_back(new_landmark);
+
 }
 
 
 
-void TreeCenterLocalization::realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
+void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                             const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                             sensor_msgs::PointCloud & cloudOut) const
 {
@@ -142,8 +180,8 @@ void TreeCenterLocalization::realTimeTransformPointCloud(const std::string & tar
 }
 
 
-void TreeCenterLocalization::addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map) {
-    map.points.clear();
+void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
+    fullLandMarks.points.clear();
 //    for(int i =0; i < pointsToBeAdded.points.size(); i++){
 //        if(pointsToBeAdded.channels[0].values[i] != 1){
 //
@@ -151,37 +189,12 @@ void TreeCenterLocalization::addPointsToMap(sensor_msgs::PointCloud pointsToBeAd
 //        addOnePtToMap(pointsToBeAdded.points[i]);
 //    }
     sensor_msgs::PointCloud temp_map;
-    realTimeTransformPointCloud(map_name, velodyne_to_map, map.header.stamp, pointsToBeAdded, temp_map);
-    map = temp_map;
+    realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
+    fullLandMarks = temp_map;
 
     //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
 
-geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
-    geometry_msgs::PointStamped sourcePointStamped;
-    sourcePointStamped.header.frame_id = sourceFrame;
-    sourcePointStamped.header.stamp = ros::Time();
-
-    sourcePointStamped.point.x = sourcePoint.x;
-    sourcePointStamped.point.y = sourcePoint.y;
-    sourcePointStamped.point.z = sourcePoint.z;
-    geometry_msgs::PointStamped targetPointStamped;
-
-    //listener.waitForTransform(targetFrame, sourceFrame, ros::Time(0), ros::Duration(3.0));
-    listener.transformPoint(targetFrame, sourcePointStamped, targetPointStamped);
-
-    geometry_msgs::Point32 pt_out;
-    pt_out.x = targetPointStamped.point.x;
-    pt_out.y = targetPointStamped.point.y;
-    pt_out.z = targetPointStamped.point.z;
-    return pt_out;
-}
-
-void TreeCenterLocalization::addOnePtToMap(geometry_msgs::Point32 new_landmark){
-    //add new tree to map_cloud
-    geometry_msgs::Point32 finalPt;
-    finalPt = changeFrame(new_landmark,lidar_name,map_name);
-    map_cloud.points.push_back(finalPt);
-    //TreeId------map_cloud.channels[0].values.push_back(new_landmark);
-
+sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform currentTF){
+    return fullLandMarks;
 }
