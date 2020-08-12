@@ -7,9 +7,12 @@ Panels:
         - /Global Options1
         - /Status1
         - /Grid1
-        - /TF1/Status1
+        - /TF1
+        - /TF1/Frames1
+        - /TF1/Tree1
+        - /TF1/Tree1/map_fuck1
         - /PointCloud1
-        - /PointCloud21
+        - /Pose1
       Splitter Ratio: 0.5
     Tree Height: 463
   - Class: rviz/Selection
@@ -58,17 +61,17 @@ Visualization Manager:
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
         base_link:
-          Value: true
+          Value: false
         imu_link:
-          Value: true
+          Value: false
         map:
-          Value: true
+          Value: false
         map_fuck:
           Value: true
         odom:
-          Value: true
+          Value: false
         velodyne:
           Value: true
       Marker Scale: 1
@@ -77,16 +80,9 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        base_link:
-          imu_link:
-            {}
+        map_fuck:
           velodyne:
             {}
-        map:
-          odom:
-            {}
-        map_fuck:
-          {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -112,7 +108,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.100000001
+      Size (m): 0.5
       Style: Flat Squares
       Topic: /discrete_map
       Unreliable: false
@@ -120,34 +116,19 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: ""
-      Decay Time: 0
+      Axes Length: 1
+      Axes Radius: 0.100000001
+      Class: rviz/Pose
+      Color: 255; 25; 0
       Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: PointCloud2
-      Position Transformer: ""
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 1
-      Style: Flat Squares
-      Topic: /tree_pt
+      Head Length: 0.600000024
+      Head Radius: 0.5
+      Name: Pose
+      Shaft Length: 1
+      Shaft Radius: 0.300000012
+      Shape: Arrow
+      Topic: /my_pose
       Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
@@ -174,16 +155,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 16.3210106
+      Distance: 55.1501465
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.597922504
-        Y: -0.815927982
-        Z: -0.356716871
+        X: 12.4843435
+        Y: -2.34939694
+        Z: 0.148980558
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
@@ -192,7 +173,7 @@ Visualization Manager:
       Pitch: 1.56979632
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.02222085
+      Yaw: 3.14222193
     Saved: ~
 Window Geometry:
   Displays:

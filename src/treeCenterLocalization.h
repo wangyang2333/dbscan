@@ -47,7 +47,6 @@ private:
     ros::Subscriber landmarkPCL_sub;
 
     ros::Publisher landmark_cloud_pub;
-    ros::Publisher robot_pose_publisher;
 
     tf::TransformBroadcaster my_br;
     tf::TransformListener listener;
@@ -65,6 +64,10 @@ private:
     double MaxCorrespondenceDistance, MaximumIterations, setTransformationEpsilon,EuclideanFitnessEpsilon;
 
     bool firstTrackFlag;
+    Eigen::Matrix<float, 4, 4> initialGuessOfICP;
+
+    geometry_msgs::PoseStamped my_pose;
+    ros::Publisher my_pose_publisher;
 
     void addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map);
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
@@ -87,7 +90,7 @@ public:
         landmarkPCL_sub = nh_.subscribe("/tree_center", 1, &TreeCenterLocalization::tree_callback, this);
 
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);
-        robot_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("robot_pose_pr2", 10);
+        my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 10);
 
         sensor_msgs::PointCloud lanmark_cloud;
         map_cloud.header.frame_id = map_name;
@@ -96,6 +99,9 @@ public:
         map_cloud.points.clear();
         map_cloud.channels[0].values.clear();
         firstTrackFlag = true;
+        initialGuessOfICP.setIdentity();
+
+
     }
 
 };

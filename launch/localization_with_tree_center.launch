@@ -7,9 +7,9 @@
     <param name="map_name" type="string" value="/map_fuck"/>
 
     <param name="MaxCorrespondenceDistance" type="double" value="2.0"/>
-    <param name="MaximumIterations" type="double" value="100.0"/>
-    <param name="TransformationEpsilon" type="double" value="1e-6"/>
-    <param name="EuclideanFitnessEpsilon" type="double" value="1e-6"/>
+    <param name="MaximumIterations" type="int" value="100"/>
+    <param name="TransformationEpsilon" type="double" value="1e-10"/>
+    <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
   </node>
   <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find dbscan)/rviz/clustering.rviz" required="true" /-->
 </launch>

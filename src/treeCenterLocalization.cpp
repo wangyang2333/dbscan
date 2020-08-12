@@ -38,13 +38,14 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         icp.setInputCloud (PCL_obsCloud);
         icp.setInputTarget (PCL_mapCloud);
 
-// Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+
+        // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
         icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
-// Set the maximum number of iterations (criterion 1)
+        // Set the maximum number of iterations (criterion 1)
         icp.setMaximumIterations (MaximumIterations);
-// Set the transformation epsilon (criterion 2)
+        // Set the transformation epsilon (criterion 2)
         icp.setTransformationEpsilon (setTransformationEpsilon);
-// Set the euclidean distance difference epsilon (criterion 3)
+        // Set the euclidean distance difference epsilon (criterion 3)
         icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
 
 //        icp.setRANSACIterations(50);
@@ -53,7 +54,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         icp.setUseReciprocalCorrespondences (true);
 
         pcl::PointCloud<pcl::PointXYZ> Final;
-        icp.align(Final);
+        icp.align(Final, initialGuessOfICP);
 
         std::cout << "has converged: " << icp.hasConverged() <<std::endl;
         std::cout << "score: " <<icp.getFitnessScore() << std::endl;
@@ -65,6 +66,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
             tf::Vector3  tempVec3;
             tf::Quaternion tempQ;
             Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
+            initialGuessOfICP = icp.getFinalTransformation ();
             Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
             Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
             tf::matrixEigenToTF(tempRotation, tempMat3x3);
@@ -74,6 +76,14 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
             tempMat3x3.getRotation(tempQ);
             velodyne_to_map.setRotation(tempQ);
             my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
+
+            my_pose.header.frame_id = map_name;
+            my_pose.header.stamp = ros::Time::now();
+            my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
+            my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
+            my_pose.pose.position.z = 0;
+            tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
+            my_pose_publisher.publish(my_pose);
         }else{
             ROS_ERROR("No convergence!");
         }
