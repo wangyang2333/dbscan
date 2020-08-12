@@ -6,8 +6,8 @@
     <param name="odom_name" type="string" value="/odom_fuck"/>
     <param name="map_name" type="string" value="/map_fuck"/>
 
-    <param name="MaxCorrespondenceDistance" type="double" value="2.0"/>
-    <param name="MaximumIterations" type="int" value="100"/>
+    <param name="MaxCorrespondenceDistance" type="double" value="0.5"/>
+    <param name="MaximumIterations" type="int" value="1000"/>
     <param name="TransformationEpsilon" type="double" value="1e-10"/>
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
   </node>
