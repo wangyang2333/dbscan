@@ -69,6 +69,9 @@ private:
     void addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map);
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
     void addOnePtToMap(geometry_msgs::Point32 new_landmark);
+    void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
+                                                             const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
+                                                             sensor_msgs::PointCloud & cloudOut) const;
 public:
     TreeCenterLocalization(){
         ros::param::get("~laser_name", lidar_name);

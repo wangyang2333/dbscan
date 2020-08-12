@@ -7,6 +7,7 @@
 void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL){
     //if(first track) build map
     if(firstTrackFlag){
+        ROS_WARN("First Track, build map with all points.");
         map_cloud.points = landmarkPCL->points;
         firstTrackFlag = false;
         //Read the static TF
@@ -74,7 +75,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
             velodyne_to_map.setRotation(tempQ);
             my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
         }else{
-            //TODO:
+            ROS_ERROR("No convergence!");
         }
         //To Edit Map (landmark form velodyne to map)
         /*To find new coming point*/
@@ -98,16 +99,52 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
     landmark_cloud_pub.publish(map_cloud);
 }
 
-void TreeCenterLocalization::addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map) {
-    map.points.clear();
-    for(int i =0; i < pointsToBeAdded.points.size(); i++){
-        if(pointsToBeAdded.channels[0].values[i] != 1){
 
-        }
-        addOnePtToMap(pointsToBeAdded.points[i]);
+
+void TreeCenterLocalization::realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
+                                            const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
+                                            sensor_msgs::PointCloud & cloudOut) const
+{
+    tf::Vector3 origin = net_transform.getOrigin();
+    tf::Matrix3x3 basis  = net_transform.getBasis();
+
+    unsigned int length = cloudIn.points.size();
+
+    // Copy relevant data from cloudIn, if needed
+    if (&cloudIn != &cloudOut)
+    {
+        cloudOut.header = cloudIn.header;
+        cloudOut.points.resize(length);
+        cloudOut.channels.resize(cloudIn.channels.size());
+        for (unsigned int i = 0 ; i < cloudIn.channels.size() ; ++i)
+            cloudOut.channels[i] = cloudIn.channels[i];
     }
 
+    // Transform points
+    cloudOut.header.stamp = target_time;
+    cloudOut.header.frame_id = target_frame;
+    for (unsigned int i = 0; i < length ; i++) {
+        double x = basis[0].x() * cloudIn.points[i].x + basis[0].y() * cloudIn.points[i].y + basis[0].z() * cloudIn.points[i].z + origin.x();
+        double y = basis[1].x() * cloudIn.points[i].x + basis[1].y() * cloudIn.points[i].y + basis[1].z() * cloudIn.points[i].z + origin.y();
+        double z = basis[2].x() * cloudIn.points[i].x + basis[2].y() * cloudIn.points[i].y + basis[2].z() * cloudIn.points[i].z + origin.z();
+        cloudOut.points[i].x = x; cloudOut.points[i].y = y; cloudOut.points[i].z = z;
+    }
+}
 
+
+void TreeCenterLocalization::addPointsToMap(sensor_msgs::PointCloud pointsToBeAdded, sensor_msgs::PointCloud& map) {
+    map.points.clear();
+//    for(int i =0; i < pointsToBeAdded.points.size(); i++){
+//        if(pointsToBeAdded.channels[0].values[i] != 1){
+//
+//        }
+//        addOnePtToMap(pointsToBeAdded.points[i]);
+//    }
+    sensor_msgs::PointCloud temp_map;
+    realTimeTransformPointCloud(map_name, velodyne_to_map, map.header.stamp, pointsToBeAdded, temp_map);
+    map = temp_map;
+
+    //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
 
 geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
@@ -120,7 +157,7 @@ geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point3
     sourcePointStamped.point.z = sourcePoint.z;
     geometry_msgs::PointStamped targetPointStamped;
 
-    listener.waitForTransform(sourceFrame, targetFrame, ros::Time(0), ros::Duration(3.0));
+    //listener.waitForTransform(targetFrame, sourceFrame, ros::Time(0), ros::Duration(3.0));
     listener.transformPoint(targetFrame, sourcePointStamped, targetPointStamped);
 
     geometry_msgs::Point32 pt_out;
