@@ -181,16 +181,16 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
 
 
 void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
-    fullLandMarks.points.clear();
-//    for(int i =0; i < pointsToBeAdded.points.size(); i++){
-//        if(pointsToBeAdded.channels[0].values[i] != 1){
-//
-//        }
-//        addOnePtToMap(pointsToBeAdded.points[i]);
-//    }
+    //fullLandMarks.points.clear();
+    for(int i =0; i < pointsToBeAdded.points.size(); i++){
+        if(pointsToBeAdded.channels[0].values[i] != 1){
+            pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
+            i--;
+        }
+    }
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
-    fullLandMarks = temp_map;
+    fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
 
     //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
