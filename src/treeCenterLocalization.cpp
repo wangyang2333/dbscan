@@ -44,7 +44,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
 
         //Configure and run ICP
         pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-        icp.setInputCloud (PCL_obsCloud);
+        icp.setInputSource(PCL_obsCloud);
         icp.setInputTarget (PCL_mapCloud);
 
 
@@ -182,12 +182,16 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
 
 void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
     //fullLandMarks.points.clear();
+    /*If untracked? erase it. All new point coming*/
     for(int i =0; i < pointsToBeAdded.points.size(); i++){
         if(pointsToBeAdded.channels[0].values[i] != 1){
             pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
             i--;
         }
     }
+    /*If this point has a old famous neighbor erase it*/
+    //TODO: erase new reTrack point
+
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
     fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
@@ -196,5 +200,19 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
 }
 
 sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform currentTF){
+    /*get Radius NN PCL on Octree*/
+    //TODO: get radius NN landmarks;
     return fullLandMarks;
+}
+
+void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
+    map_name = globalFrame;
+    lidar_name = initialPCL.header.frame_id;
+    fullLandMarks.header.frame_id = map_name;
+    fullLandMarks.points = initialPCL.points;
+    fullLandMarks.channels.resize(2);
+    fullLandMarks.channels[BirthTime].name = "BirthTime";
+    fullLandMarks.channels[TrackingTimes].name = "TrackingTimes";
+    fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), ros::Time::now().toSec());
+    fullLandMarks.channels[TrackingTimes].values.resize(fullLandMarks.points.size(),0);
 }

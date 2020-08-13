@@ -47,36 +47,20 @@ class TreeAtlas{
     friend class TreeCenterLocalization;
 private:
     sensor_msgs::PointCloud fullLandMarks;
-
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
+    enum {BirthTime = 0, TrackingTimes = 1};
 
     void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                      sensor_msgs::PointCloud & cloudOut) const;
 public:
     TreeAtlas(){
-        fullLandMarks.header.frame_id = map_name;
-        fullLandMarks.channels.resize(1);
-        fullLandMarks.channels[0].name = "tree_id";
-        fullLandMarks.points.clear();
-        fullLandMarks.channels[0].values.clear();
     }
-    void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
-        map_name = globalFrame;
-        lidar_name = initialPCL.header.frame_id;
-        fullLandMarks.header.frame_id = map_name;
-        fullLandMarks.points = initialPCL.points;
-    }
+    void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame);
     sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
     void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF);
-    sensor_msgs::PointCloud getFullAtlas(){
-        return fullLandMarks;
-    }
-
-
-
-
+    sensor_msgs::PointCloud getFullAtlas(){return fullLandMarks;}
 };
 
 
