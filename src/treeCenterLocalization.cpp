@@ -67,7 +67,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
 
         std::cout << "has converged: " << icp.hasConverged() <<std::endl;
         std::cout << "score: " <<icp.getFitnessScore() << std::endl;
-        std::cout << icp.getFinalTransformation() << std::endl;
+        //std::cout << icp.getFinalTransformation() << std::endl;
 
         if(icp.hasConverged()){
             //Publish TF from velodyne to map
@@ -185,12 +185,14 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     /*If untracked? erase it. All new point coming*/
     for(int i =0; i < pointsToBeAdded.points.size(); i++){
         if(pointsToBeAdded.channels[0].values[i] != 1){
+            //
             pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
+            //TODO:update Tracking times of Atlas
             i--;
         }
     }
     /*If this point has a old famous neighbor erase it*/
-    //TODO: erase new reTrack point
+    //TODO: erase new re Track point
 
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);

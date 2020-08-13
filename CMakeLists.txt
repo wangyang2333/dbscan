@@ -164,13 +164,13 @@ target_link_libraries( sendgoal2 ${CERES_LIBRARIES} )
 target_link_libraries( sendgoal2 dlib::dlib )
 
 
-add_library(tree_tracker src/tree_tracker.cpp)
-target_link_libraries( tree_tracker ${OpenCV_LIBS} )
-target_link_libraries( tree_tracker ${CERES_LIBRARIES} )
-target_link_libraries( tree_tracker dlib::dlib )
-
-add_executable(localization src/localization.cpp)
-target_link_libraries(localization tree_tracker)
+#add_library(tree_tracker src/tree_tracker.cpp)
+#target_link_libraries( tree_tracker ${OpenCV_LIBS} )
+#target_link_libraries( tree_tracker ${CERES_LIBRARIES} )
+#target_link_libraries( tree_tracker dlib::dlib )
+#
+#add_executable(localization src/localization.cpp)
+#target_link_libraries(localization tree_tracker)
 
 add_library(treeCenterLocalization src/treeCenterLocalization.cpp )
 target_link_libraries( treeCenterLocalization ${CERES_LIBRARIES} )
@@ -194,13 +194,13 @@ target_link_libraries(fake_sensormsg_pointcloud ${catkin_LIBRARIES})
  add_dependencies(dbscan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(dbscan3d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(sendgoal2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
- add_dependencies(tree_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(tree_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(treeCenterLocalization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
   target_link_libraries(dbscan ${catkin_LIBRARIES})
   target_link_libraries(dbscan3d ${catkin_LIBRARIES})
   target_link_libraries(sendgoal2 ${catkin_LIBRARIES})
-  target_link_libraries(tree_tracker ${catkin_LIBRARIES})
+#  target_link_libraries(tree_tracker ${catkin_LIBRARIES})
   target_link_libraries(treeCenterLocalization ${catkin_LIBRARIES})
 #############
 ## Install ##
