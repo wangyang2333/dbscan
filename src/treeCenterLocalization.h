@@ -48,20 +48,18 @@ using namespace std;
 class TreeAtlas{
     friend class TreeCenterLocalization;
 private:
-    enum {IdxInFullMap = 0};
+    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3};
     double localMapRadius;
     OctreeDriver oldDriver;
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
-    enum {BirthTime = 0, TrackingTimes = 1};
-
     void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                      sensor_msgs::PointCloud & cloudOut) const;
 public:
     TreeAtlas(){
-        localMap.channels.resize(1);
+        localMap.channels.resize(4);
         localMap.channels[IdxInFullMap].name = "IdxInFullMap";
     }
     void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame);
@@ -75,7 +73,7 @@ public:
 class TreeCenterLocalization {
     friend TreeAtlas;
 private:
-    enum {TrackSuccess = 0, IdxInFullMap = 1};
+    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3};
     void tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
     ros::NodeHandle nh_;
     ros::Subscriber landmarkPCL_sub;

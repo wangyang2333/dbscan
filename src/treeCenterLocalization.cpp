@@ -101,7 +101,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         //To Edit Map (landmark form velodyne to map)
         /*To find new coming point*/
         sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
-        ptsToBeAddedToMap.channels.resize(2);
+        ptsToBeAddedToMap.channels.resize(4);
         ptsToBeAddedToMap.channels[TrackSuccess].name = "trackSuccess";
         ptsToBeAddedToMap.channels[TrackSuccess].values.resize(ptsToBeAddedToMap.points.size());
         ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
@@ -118,7 +118,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
             cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
             ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondences[i].index_query] = 1;
             ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
-                    localMap.channels[0].values[currentCorrespondences[i].index_match];
+                    localMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_match];
         }
         myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
     }
@@ -192,10 +192,10 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     /*If tracked? erase it. All new point coming points left now*/
     for(int i =0; i < pointsToBeAdded.points.size(); i++){
         /*if New point*/
-        if(pointsToBeAdded.channels[0].values[i] == 1){
+        if(pointsToBeAdded.channels[TrackSuccess].values[i] == 1){
             //
             pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
-            fullLandMarks.channels[TrackingTimes].values[pointsToBeAdded.channels[1].values[i]]++;
+            fullLandMarks.channels[TrackingTimes].values[pointsToBeAdded.channels[IdxInFullMap].values[i]]++;
             i--;
         }
     }
@@ -207,7 +207,7 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
     temp_map.channels.clear();
-    temp_map.channels.resize(2);
+    temp_map.channels.resize(4);
 
     temp_map.channels[BirthTime].name = "BirthTime";
     temp_map.channels[TrackingTimes].name = "TrackingTimes";
@@ -259,7 +259,7 @@ void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, st
     lidar_name = initialPCL.header.frame_id;
     fullLandMarks.header.frame_id = map_name;
     fullLandMarks.points = initialPCL.points;
-    fullLandMarks.channels.resize(2);
+    fullLandMarks.channels.resize(4);
     fullLandMarks.channels[BirthTime].name = "BirthTime";
     fullLandMarks.channels[TrackingTimes].name = "TrackingTimes";
     fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), ros::Time::now().toSec());
