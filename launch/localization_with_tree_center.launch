@@ -12,7 +12,7 @@
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
   </node>
 
-  <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" output= "screen" >
+  <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" >
 
       <!-- No use parameter from 2d dbscan-->
       <param name="scan_number_360" type="double" value="1080.0"/>

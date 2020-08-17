@@ -107,7 +107,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.5
+      Size (m): 0.100000001
       Style: Flat Squares
       Topic: /discrete_map
       Unreliable: false
@@ -154,16 +154,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 45.1370125
+      Distance: 18.4463959
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.04286432
-        Y: -0.774532974
-        Z: 0.140540093
+        X: 5.56772614
+        Y: 0.157382414
+        Z: 0.770201981
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false

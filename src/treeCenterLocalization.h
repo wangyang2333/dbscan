@@ -36,6 +36,8 @@
 #include <dlib/optimization/max_cost_assignment.h>
 #include <tf/transform_listener.h>
 
+#include "octree_nn.h"
+
 #ifndef SRC_TREECENTERLOCALIZATION_H
 #define SRC_TREECENTERLOCALIZATION_H
 
@@ -46,6 +48,9 @@ using namespace std;
 class TreeAtlas{
     friend class TreeCenterLocalization;
 private:
+    enum {IdxInFullMap = 0};
+    double localMapRadius = 100;
+    OctreeDriver oldDriver;
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
@@ -56,6 +61,8 @@ private:
                                      sensor_msgs::PointCloud & cloudOut) const;
 public:
     TreeAtlas(){
+        localMap.channels.resize(1);
+        localMap.channels[IdxInFullMap].name = "IdxInFullMap";
     }
     void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame);
     sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
@@ -66,7 +73,9 @@ public:
 
 
 class TreeCenterLocalization {
+    friend TreeAtlas;
 private:
+    enum {TrackSuccess = 0, IdxInFullMap = 1};
     void tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
     ros::NodeHandle nh_;
     ros::Subscriber landmarkPCL_sub;

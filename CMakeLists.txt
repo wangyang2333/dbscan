@@ -172,7 +172,7 @@ target_link_libraries( sendgoal2 dlib::dlib )
 #add_executable(localization src/localization.cpp)
 #target_link_libraries(localization tree_tracker)
 
-add_library(treeCenterLocalization src/treeCenterLocalization.cpp )
+add_library(treeCenterLocalization src/treeCenterLocalization.cpp src/octree_nn.cpp src/octree_nn.h)
 target_link_libraries( treeCenterLocalization ${CERES_LIBRARIES} )
 target_link_libraries( treeCenterLocalization dlib::dlib )
 

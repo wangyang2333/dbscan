@@ -27,6 +27,8 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         my_pose_publisher.publish(my_pose);
     }else{
         /*Track with current map*/
+        sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
+
         //Transform datatype to use PCL LIB
         pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -34,7 +36,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         sensor_msgs::PointCloud2 ROS_PCL2_temp;
         pcl::PCLPointCloud2 PCL_PCL2_temp;
 
-        sensor_msgs::convertPointCloudToPointCloud2(myAtlas.getLocalMapWithTF(velodyne_to_map), ROS_PCL2_temp);
+        sensor_msgs::convertPointCloudToPointCloud2(localMap, ROS_PCL2_temp);
         pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
         pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
 
@@ -99,20 +101,27 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         //To Edit Map (landmark form velodyne to map)
         /*To find new coming point*/
         sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
-        ptsToBeAddedToMap.channels.resize(1);
-        ptsToBeAddedToMap.channels[0].name = "trackSuccess";
-        ptsToBeAddedToMap.channels[0].values.resize(ptsToBeAddedToMap.points.size());
-
+        ptsToBeAddedToMap.channels.resize(2);
+        ptsToBeAddedToMap.channels[TrackSuccess].name = "trackSuccess";
+        ptsToBeAddedToMap.channels[TrackSuccess].values.resize(ptsToBeAddedToMap.points.size());
+        ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
+        ptsToBeAddedToMap.channels[IdxInFullMap].values.resize(ptsToBeAddedToMap.points.size());
 
         pcl::Correspondences currentCorrespondences = *icp.correspondences_;
         for(int i = 0; i < currentCorrespondences.size(); i++){
-//            cout<<"i:"<< i <<endl;
-//            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
-//            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
-//            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
-//            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
-            ptsToBeAddedToMap.channels[0].values[i] = 1;
+            cout<<"localMapsize: "<<localMap.points.size()<<endl;
+            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
+            cout<<"i:"<< i <<endl;
+            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+            ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondences[i].index_query] = 1;
+            ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
+                    localMap.channels[0].values[currentCorrespondences[i].index_match];
         }
+        //TODO:ERROR- the index is on localmap but i give the value to SCAN
+        ptsToBeAddedToMap.channels[IdxInFullMap] = localMap.channels[TreeAtlas::IdxInFullMap];
         myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
@@ -182,12 +191,13 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
 
 void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
     //fullLandMarks.points.clear();
-    /*If untracked? erase it. All new point coming*/
+    /*If tracked? erase it. All new point coming points left now*/
     for(int i =0; i < pointsToBeAdded.points.size(); i++){
-        if(pointsToBeAdded.channels[0].values[i] != 1){
+        /*if New point*/
+        if(pointsToBeAdded.channels[0].values[i] == 1){
             //
             pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
-            //TODO:update Tracking times of Atlas
+            //TODO:update Tracking times of Atlas 注意这里的PCL是scan instead of map
             i--;
         }
     }
@@ -201,10 +211,35 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
 
+/*get Radius NN PCL on Octree*/
+/*Find Landmarks point with it's index*/
 sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform currentTF){
-    /*get Radius NN PCL on Octree*/
-    //TODO: get radius NN landmarks;
-    return fullLandMarks;
+    localMap.points.clear();
+    localMap.channels[IdxInFullMap].values.clear();
+    /*Build Octree with full landmarks*/
+    oldDriver.octreeConstructFromPCL(fullLandMarks);
+    /*Transform TF to vector*/
+    vector<double> vec;
+    vec.resize(3);
+    vec[0] = currentTF.getOrigin().getX();
+    vec[1] = currentTF.getOrigin().getY();
+    vec[2] = currentTF.getOrigin().getZ();
+    /*Do radiusNN on Octree*/
+    oldDriver.searchOctreeRadiusNN(vec, fullLandMarks, oldDriver.root, localMapRadius);
+    vector<vector<double>> currentResult = oldDriver.getResultVector();
+    vector<int> currentIndex = oldDriver.getResultIndex();
+    oldDriver.clearResult();
+    /*Pack Idx and Vec to PCL*/
+    for(int i = 0; i < currentResult.size(); i++){
+        geometry_msgs::Point32 tempPt;
+        tempPt.x = currentResult[i][0];
+        tempPt.y = currentResult[i][1];
+        tempPt.z = currentResult[i][2];
+        localMap.points.push_back(tempPt);
+        localMap.channels[IdxInFullMap].values.push_back(currentIndex[i]);
+    }
+
+    return localMap;
 }
 
 void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
