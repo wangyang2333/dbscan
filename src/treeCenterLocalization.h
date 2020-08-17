@@ -49,7 +49,7 @@ class TreeAtlas{
     friend class TreeCenterLocalization;
 private:
     enum {IdxInFullMap = 0};
-    double localMapRadius = 100;
+    double localMapRadius;
     OctreeDriver oldDriver;
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
@@ -96,6 +96,7 @@ private:
     string odom_name;
     string map_name;
     double MaxCorrespondenceDistance, MaximumIterations, setTransformationEpsilon,EuclideanFitnessEpsilon;
+    double localMapRadius;
 
     bool firstTrackFlag;
     Eigen::Matrix<float, 4, 4> initialGuessOfICP;
@@ -119,6 +120,9 @@ public:
         ros::param::get("~MaximumIterations",MaximumIterations);
         ros::param::get("~setTransformationEpsilon",setTransformationEpsilon);
         ros::param::get("~EuclideanFitnessEpsilon",EuclideanFitnessEpsilon);
+        ros::param::get("~localMapRadius",localMapRadius);
+
+        myAtlas.localMapRadius = localMapRadius;
         landmarkPCL_sub = nh_.subscribe("/tree_center", 1, &TreeCenterLocalization::tree_callback, this);
 
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);

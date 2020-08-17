@@ -5,13 +5,9 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Status1
-        - /Grid1
-        - /TF1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /PointCloud1
-        - /PointCloud1/Status1
+        - /PointCloud2
       Splitter Ratio: 0.5
     Tree Height: 463
   - Class: rviz/Selection
@@ -63,7 +59,27 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
+        camera_aligned_depth_to_color_frame:
+          Value: true
+        camera_color_frame:
+          Value: true
+        camera_color_optical_frame:
+          Value: true
+        camera_depth_frame:
+          Value: true
+        camera_depth_optical_frame:
+          Value: true
+        camera_link:
+          Value: true
+        camera_mount_link:
+          Value: true
+        ee_link:
+          Value: true
+        foreArm_Link:
+          Value: true
         imu_link:
+          Value: true
+        knife_link:
           Value: true
         map:
           Value: true
@@ -71,7 +87,19 @@ Visualization Manager:
           Value: true
         odom:
           Value: true
+        shoulder_Link:
+          Value: true
+        upperArm_Link:
+          Value: true
         velodyne:
+          Value: true
+        virtual_camera_color_frame:
+          Value: true
+        wrist1_Link:
+          Value: true
+        wrist2_Link:
+          Value: true
+        wrist3_Link:
           Value: true
       Marker Scale: 10
       Name: TF
@@ -99,7 +127,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 0
+      Max Intensity: 1061
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
@@ -108,7 +136,7 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.5
-      Style: Flat Squares
+      Style: Boxes
       Topic: /discrete_map
       Unreliable: false
       Use Fixed Frame: true
@@ -128,6 +156,36 @@ Visualization Manager:
       Shape: Arrow
       Topic: /my_pose
       Unreliable: false
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 15
+      Size (m): 1
+      Style: Flat Squares
+      Topic: /tree_center
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
@@ -154,25 +212,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 154.480118
+      Distance: 45.3900948
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 39.1531029
-        Y: 5.4096899
-        Z: 17.5923748
+        X: 7.19361782
+        Y: 5.5647769
+        Z: 7.05427742
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.43979752
+      Pitch: 1.24479604
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.19721746
+      Yaw: 3.0072124
     Saved: ~
 Window Geometry:
   Displays:

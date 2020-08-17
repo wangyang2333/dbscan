@@ -59,8 +59,8 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         // Set the euclidean distance difference epsilon (criterion 3)
         icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
 
-//        icp.setRANSACIterations(50);
-//        icp.setRANSACOutlierRejectionThreshold(0.05);
+        icp.setRANSACIterations(100);
+        icp.setRANSACOutlierRejectionThreshold(0.5);
 
         icp.setUseReciprocalCorrespondences (true);
 
@@ -201,8 +201,8 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     }
     /*If this point has a old famous neighbor erase it*/
     //TODO: erase new re Track point
-    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
-    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
+//    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
+//    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
 
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
@@ -218,8 +218,8 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
                         temp_map.channels[BirthTime].values.begin(), temp_map.channels[BirthTime].values.end());
     fullLandMarks.channels[TrackingTimes].values.insert(fullLandMarks.channels[TrackingTimes].values.end(),
                         temp_map.channels[TrackingTimes].values.begin(), temp_map.channels[TrackingTimes].values.end());
-    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
-    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
+//    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
+//    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
     //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
 
