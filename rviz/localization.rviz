@@ -11,7 +11,7 @@ Panels:
         - /TF1/Frames1
         - /TF1/Tree1
         - /PointCloud1
-        - /Pose1
+        - /PointCloud1/Status1
       Splitter Ratio: 0.5
     Tree Height: 463
   - Class: rviz/Selection
@@ -91,7 +91,7 @@ Visualization Manager:
         Min Value: -10
         Value: true
       Axis: Z
-      Channel Name: intensity
+      Channel Name: TrackingTimes
       Class: rviz/PointCloud
       Color: 255; 255; 255
       Color Transformer: Intensity
@@ -99,7 +99,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 4096
+      Max Intensity: 0
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
@@ -107,7 +107,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.100000001
+      Size (m): 0.5
       Style: Flat Squares
       Topic: /discrete_map
       Unreliable: false
@@ -154,25 +154,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.4463959
+      Distance: 154.480118
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.56772614
-        Y: 0.157382414
-        Z: 0.770201981
+        X: 39.1531029
+        Y: 5.4096899
+        Z: 17.5923748
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.19479704
+      Pitch: 1.43979752
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.22222233
+      Yaw: 3.19721746
     Saved: ~
 Window Geometry:
   Displays:

@@ -120,8 +120,6 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
             ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
                     localMap.channels[0].values[currentCorrespondences[i].index_match];
         }
-        //TODO:ERROR- the index is on localmap but i give the value to SCAN
-        ptsToBeAddedToMap.channels[IdxInFullMap] = localMap.channels[TreeAtlas::IdxInFullMap];
         myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
@@ -197,17 +195,31 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
         if(pointsToBeAdded.channels[0].values[i] == 1){
             //
             pointsToBeAdded.points.erase(i+pointsToBeAdded.points.begin());
-            //TODO:update Tracking times of Atlas 注意这里的PCL是scan instead of map
+            fullLandMarks.channels[TrackingTimes].values[pointsToBeAdded.channels[1].values[i]]++;
             i--;
         }
     }
     /*If this point has a old famous neighbor erase it*/
     //TODO: erase new re Track point
+    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
+    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
 
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
-    fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
+    temp_map.channels.clear();
+    temp_map.channels.resize(2);
 
+    temp_map.channels[BirthTime].name = "BirthTime";
+    temp_map.channels[TrackingTimes].name = "TrackingTimes";
+    temp_map.channels[BirthTime].values.resize(temp_map.points.size(), ros::Time::now().toSec());
+    temp_map.channels[TrackingTimes].values.resize(temp_map.points.size(),0);
+    fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
+    fullLandMarks.channels[BirthTime].values.insert(fullLandMarks.channels[BirthTime].values.end(),
+                        temp_map.channels[BirthTime].values.begin(), temp_map.channels[BirthTime].values.end());
+    fullLandMarks.channels[TrackingTimes].values.insert(fullLandMarks.channels[TrackingTimes].values.end(),
+                        temp_map.channels[TrackingTimes].values.begin(), temp_map.channels[TrackingTimes].values.end());
+    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
+    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
     //listener.transformPointCloud(map_name, pointsToBeAdded, map);
 }
 
