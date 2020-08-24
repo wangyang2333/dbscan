@@ -186,6 +186,11 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
     }
 }
 
+void TreeAtlas::mapRefine() {
+    for(int i = 0; i < fullLandMarks.points.size(); i++){
+        //see time and
+    }
+}
 
 void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
     //fullLandMarks.points.clear();
@@ -201,31 +206,41 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     }
     /*If this point has a old famous neighbor erase it*/
     //TODO: erase new re Track point
-//    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
-//    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
 
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
     temp_map.channels.clear();
     temp_map.channels.resize(4);
-
     temp_map.channels[BirthTime].name = "BirthTime";
     temp_map.channels[TrackingTimes].name = "TrackingTimes";
-    temp_map.channels[BirthTime].values.resize(temp_map.points.size(), ros::Time::now().toSec());
+    temp_map.channels[BirthTime].values.resize(temp_map.points.size(), ros::Time::now().toSec()-initialTime);
     temp_map.channels[TrackingTimes].values.resize(temp_map.points.size(),0);
     fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
     fullLandMarks.channels[BirthTime].values.insert(fullLandMarks.channels[BirthTime].values.end(),
                         temp_map.channels[BirthTime].values.begin(), temp_map.channels[BirthTime].values.end());
     fullLandMarks.channels[TrackingTimes].values.insert(fullLandMarks.channels[TrackingTimes].values.end(),
                         temp_map.channels[TrackingTimes].values.begin(), temp_map.channels[TrackingTimes].values.end());
-//    ROS_WARN("number of Points is %d",(int)fullLandMarks.points.size());
-//    ROS_WARN("number of TrackingTimes is %d",(int)fullLandMarks.channels[TrackingTimes].values.size());
-    //listener.transformPointCloud(map_name, pointsToBeAdded, map);
+
+    //TODO: Eliminate the Points with long time and Low tracking time.
+    double currentTime = ros::Time::now().toSec()-initialTime;
+    for(int i = 0; i < fullLandMarks.points.size(); i ++){
+        if(currentTime - fullLandMarks.channels[BirthTime].values[i] > 3 &&
+        fullLandMarks.channels[TrackingTimes].values[i] < 50){
+            ROS_WARN("ERASE");
+            fullLandMarks.points.erase(fullLandMarks.points.begin() + i);
+            for(int ch = 0; ch < fullLandMarks.channels.size(); ch++){
+                if(fullLandMarks.channels[ch].values.size() == fullLandMarks.points.size())
+                fullLandMarks.channels[ch].values.erase(i + fullLandMarks.channels[ch].values.begin());
+            }
+        }
+    }
 }
 
 /*get Radius NN PCL on Octree*/
 /*Find Landmarks point with it's index*/
 sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform currentTF){
+    //TODO: Newly added points can not be used as landmark
+    //TODO: First ICP with Old pts, then ICP with New Pts;
     localMap.points.clear();
     localMap.channels[IdxInFullMap].values.clear();
     /*Build Octree with full landmarks*/
@@ -262,6 +277,6 @@ void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, st
     fullLandMarks.channels.resize(4);
     fullLandMarks.channels[BirthTime].name = "BirthTime";
     fullLandMarks.channels[TrackingTimes].name = "TrackingTimes";
-    fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), ros::Time::now().toSec());
+    fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), ros::Time::now().toSec()-initialTime);
     fullLandMarks.channels[TrackingTimes].values.resize(fullLandMarks.points.size(),0);
 }

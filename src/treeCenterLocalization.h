@@ -54,9 +54,11 @@ private:
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
+    double initialTime = ros::Time::now().toSec();
     void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                      sensor_msgs::PointCloud & cloudOut) const;
+    void mapRefine();
 public:
     TreeAtlas(){
         localMap.channels.resize(4);
