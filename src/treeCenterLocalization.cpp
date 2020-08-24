@@ -224,8 +224,8 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     //TODO: Eliminate the Points with long time and Low tracking time.
     double currentTime = ros::Time::now().toSec()-initialTime;
     for(int i = 0; i < fullLandMarks.points.size(); i ++){
-        if(currentTime - fullLandMarks.channels[BirthTime].values[i] > 3 &&
-        fullLandMarks.channels[TrackingTimes].values[i] < 50){
+        if(currentTime - fullLandMarks.channels[BirthTime].values[i] > birthTimeThreshould &&
+        fullLandMarks.channels[TrackingTimes].values[i] < TrackingTimesThreshould && currentTime > removalBeginTime){
             ROS_WARN("ERASE");
             fullLandMarks.points.erase(fullLandMarks.points.begin() + i);
             for(int ch = 0; ch < fullLandMarks.channels.size(); ch++){

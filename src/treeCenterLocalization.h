@@ -54,6 +54,7 @@ private:
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
+    double birthTimeThreshould, TrackingTimesThreshould, removalBeginTime;
     double initialTime = ros::Time::now().toSec();
     void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
@@ -61,6 +62,9 @@ private:
     void mapRefine();
 public:
     TreeAtlas(){
+        ros::param::get("~laser_name", birthTimeThreshould);
+        ros::param::get("~base_link_name",TrackingTimesThreshould);
+        ros::param::get("~odom_name",removalBeginTime);
         localMap.channels.resize(4);
         localMap.channels[IdxInFullMap].name = "IdxInFullMap";
     }

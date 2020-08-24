@@ -9,8 +9,13 @@
     <param name="MaxCorrespondenceDistance" type="double" value="0.5"/>
     <param name="MaximumIterations" type="int" value="1000"/>
     <param name="TransformationEpsilon" type="double" value="1e-10"/>
-    <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>localMapRadius
+    <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
     <param name="localMapRadius" type="double" value="100"/>
+
+
+    <param name="birthTimeThreshould" type="double" value="5"/>
+    <param name="TrackingTimesThreshould" type="double" value="30"/>
+    <param name="removalBeginTime" type="double" value="1"/>
   </node>
 
   <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" >
