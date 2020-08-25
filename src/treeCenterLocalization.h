@@ -118,8 +118,8 @@ private:
 
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
     void addOnePtToMap(geometry_msgs::Point32 new_landmark);
-    void ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
-    void ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
+    bool ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
+    bool ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
 
 public:
     TreeCenterLocalization(){

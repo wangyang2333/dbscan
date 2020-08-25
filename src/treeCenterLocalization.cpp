@@ -25,15 +25,16 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
         my_pose_publisher.publish(my_pose);
     }else{
-        ICPwithStableMap(landmarkPCL);
-        ICPwithfullLandmarks(landmarkPCL);
+        if(ICPwithStableMap(landmarkPCL)){
+            ICPwithfullLandmarks(landmarkPCL);
+        }
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
     endTime = clock();//计时结束
     cout << "The run CallBack localization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
-void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
     //Transform datatype to use PCL LIB
     pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -72,7 +73,7 @@ void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     pcl::PointCloud<pcl::PointXYZ> Final;
     icp.align(Final, initialGuessOfICP);
     pcl::Correspondences currentCorrespondences = *icp.correspondences_;
-    if(icp.hasConverged()){
+    if(1){
         //Publish TF from velodyne to map
         tf::Matrix3x3 tempMat3x3;
         tf::Vector3  tempVec3;
@@ -112,8 +113,9 @@ void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
         }
         ROS_ERROR("No convergence In full ICP!");
     }
+    return icp.hasConverged();
 }
-void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
     /*Track with current map*/
     sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
 
@@ -192,6 +194,7 @@ void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
                 localMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_match];
     }
     myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
+    return icp.hasConverged();
 }
 
 geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
