@@ -197,17 +197,16 @@ bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
     return icp.hasConverged();
 }
 
-geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
+geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame,
+                                                           string targetFrame){
     geometry_msgs::PointStamped sourcePointStamped;
     sourcePointStamped.header.frame_id = sourceFrame;
-    sourcePointStamped.header.stamp = ros::Time();
 
     sourcePointStamped.point.x = sourcePoint.x;
     sourcePointStamped.point.y = sourcePoint.y;
     sourcePointStamped.point.z = sourcePoint.z;
     geometry_msgs::PointStamped targetPointStamped;
 
-    //listener.waitForTransform(targetFrame, sourceFrame, ros::Time(0), ros::Duration(3.0));
     listener.transformPoint(targetFrame, sourcePointStamped, targetPointStamped);
 
     geometry_msgs::Point32 pt_out;
@@ -280,7 +279,7 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     //TODO: erase new re Track point
 
     sensor_msgs::PointCloud temp_map;
-    realTimeTransformPointCloud(map_name, currentTF, fullLandMarks.header.stamp, pointsToBeAdded, temp_map);
+    realTimeTransformPointCloud(map_name, currentTF, pointsToBeAdded.header.stamp, pointsToBeAdded, temp_map);
     temp_map.channels.clear();
     temp_map.channels.resize(4);
     temp_map.channels[BirthTime].name = "BirthTime";
