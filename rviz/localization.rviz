@@ -4,12 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Grid1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /PointCloud2
-        - /PointCloud3
+        - /PointCloud1
+        - /Odometry1
+        - /Odometry1/Shape1
       Splitter Ratio: 0.5
     Tree Height: 269
   - Class: rviz/Selection
@@ -60,52 +59,52 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_link:
-          Value: true
+          Value: false
         camera_aligned_depth_to_color_frame:
-          Value: true
+          Value: false
         camera_color_frame:
-          Value: true
+          Value: false
         camera_color_optical_frame:
-          Value: true
+          Value: false
         camera_depth_frame:
-          Value: true
+          Value: false
         camera_depth_optical_frame:
-          Value: true
+          Value: false
         camera_link:
-          Value: true
+          Value: false
         camera_mount_link:
-          Value: true
+          Value: false
         ee_link:
-          Value: true
+          Value: false
         foreArm_Link:
-          Value: true
+          Value: false
         imu_link:
-          Value: true
+          Value: false
         knife_link:
-          Value: true
+          Value: false
         map:
-          Value: true
+          Value: false
         map_fuck:
           Value: true
         odom:
-          Value: true
+          Value: false
         shoulder_Link:
-          Value: true
+          Value: false
         upperArm_Link:
-          Value: true
+          Value: false
         velodyne:
           Value: true
         virtual_camera_color_frame:
-          Value: true
+          Value: false
         wrist1_Link:
-          Value: true
+          Value: false
         wrist2_Link:
-          Value: true
+          Value: false
         wrist3_Link:
-          Value: true
+          Value: false
       Marker Scale: 10
       Name: TF
-      Show Arrows: true
+      Show Arrows: false
       Show Axes: true
       Show Names: false
       Tree:
@@ -129,7 +128,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 965
+      Max Intensity: 986
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
@@ -231,6 +230,40 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Angle Tolerance: 0.100000001
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.300000012
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 0
+      Name: Odometry
+      Position Tolerance: 0.100000001
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.100000001
+        Color: 170; 0; 0
+        Head Length: 0.300000012
+        Head Radius: 0.300000012
+        Shaft Length: 1
+        Shaft Radius: 0.0500000007
+        Value: Arrow
+      Topic: /my_Odometry
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -256,25 +289,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 41.4283791
+      Distance: 32.7019348
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -2.40858841
-        Y: 1.70628655
+        X: -8.25374126
+        Y: 0.0392060876
         Z: 0.00191212457
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.809796393
+      Pitch: 0.894796431
       Target Frame: velodyne
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.26721501
+      Yaw: 3.05221486
     Saved: ~
 Window Geometry:
   Displays:

@@ -25,6 +25,7 @@
 #include <pcl/point_types.h>
 
 #include <sensor_msgs/point_cloud_conversion.h>
+#include <nav_msgs/Odometry.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/icp.h>
 
@@ -55,14 +56,17 @@ private:
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
+    double stableTimeThreshould, stableTrackingThreshould;
     double birthTimeThreshould, TrackingTimesThreshould, removalBeginTime;
-    double initialTime = ros::Time::now().toSec();
+    double initialTime;
     void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                      sensor_msgs::PointCloud & cloudOut) const;
     void mapRefine();
 public:
     TreeAtlas(){
+        ros::param::get("~stableTimeThreshould", stableTimeThreshould);
+        ros::param::get("~stableTrackingThreshould",stableTrackingThreshould);
         ros::param::get("~birthTimeThreshould", birthTimeThreshould);
         ros::param::get("~TrackingTimesThreshould",TrackingTimesThreshould);
         ros::param::get("~removalBeginTime",removalBeginTime);
@@ -109,7 +113,8 @@ private:
 
     geometry_msgs::PoseStamped my_pose;
     ros::Publisher my_pose_publisher;
-
+    nav_msgs::Odometry my_odometry;
+    ros::Publisher my_odometry_publisher;
 
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
     void addOnePtToMap(geometry_msgs::Point32 new_landmark);
@@ -135,6 +140,7 @@ public:
 
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);
         my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 10);
+        my_odometry_publisher = nh_.advertise<nav_msgs::Odometry>("my_Odometry", 10);
 
         firstTrackFlag = true;
         initialGuessOfICP.setIdentity();

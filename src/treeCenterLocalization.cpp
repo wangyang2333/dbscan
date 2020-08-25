@@ -5,6 +5,8 @@
 #include "treeCenterLocalization.h"
 
 void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL){
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
     //if(first track) build map
     if(firstTrackFlag){
         ROS_WARN("First Track, build map with all points.");
@@ -13,10 +15,10 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         firstTrackFlag = false;
 
         velodyne_to_map.setIdentity();
-        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
+        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, landmarkPCL->header.stamp, map_name, lidar_name));
 
         my_pose.header.frame_id = map_name;
-        my_pose.header.stamp = ros::Time::now();
+        my_pose.header.stamp = landmarkPCL->header.stamp;
         my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
         my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
         my_pose.pose.position.z = 0;
@@ -27,6 +29,8 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         ICPwithfullLandmarks(landmarkPCL);
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
+    endTime = clock();//计时结束
+    cout << "The run CallBack localization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
@@ -67,20 +71,9 @@ void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
 
     pcl::PointCloud<pcl::PointXYZ> Final;
     icp.align(Final, initialGuessOfICP);
-
+    pcl::Correspondences currentCorrespondences = *icp.correspondences_;
     if(icp.hasConverged()){
         //Publish TF from velodyne to map
-        cout<<icp.getFinalTransformation ()<<endl;
-        for(int i = 0; i < (*icp.correspondences_).size(); i++){
-            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
-            cout<<"localMapsize: "<<myAtlas.getStableMap().points.size()<<endl;
-            cout<<"i:"<< i <<endl;
-            cout<<"index_match:"<<(*icp.correspondences_)[i].index_match<<endl;
-            cout<<"index_query:"<<(*icp.correspondences_)[i].index_query<<endl;
-            cout<<"distance:"<<(*icp.correspondences_)[i].distance<<endl;
-            cout<<"weight:"<<(*icp.correspondences_)[i].weight<<endl;
-        }
-        //OutputTest------------------------
         tf::Matrix3x3 tempMat3x3;
         tf::Vector3  tempVec3;
         tf::Quaternion tempQ;
@@ -90,21 +83,34 @@ void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
         Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
         tf::matrixEigenToTF(tempRotation, tempMat3x3);
         tf::vectorEigenToTF(tempTranslation, tempVec3);
-        /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
         velodyne_to_map.setOrigin(tempVec3);
         tempMat3x3.getRotation(tempQ);
         velodyne_to_map.setRotation(tempQ);
-        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
-
+        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, landmarkPCL->header.stamp, map_name, lidar_name));
+        /*Publish pose*/
         my_pose.header.frame_id = map_name;
-        my_pose.header.stamp = ros::Time::now();
+        my_pose.header.stamp = landmarkPCL->header.stamp;
         my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
         my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
         my_pose.pose.position.z = 0;
         tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
         my_pose_publisher.publish(my_pose);
+        /*Publish Odometry*/
+        my_odometry.pose.pose = my_pose.pose;
+        my_odometry.header = my_pose.header;
+        my_odometry_publisher.publish(my_odometry);
     }else{
         ROS_ERROR("No convergence In Stable ICP!");
+        for(int i = 0; i < currentCorrespondences.size(); i++){
+            cout<<"localMapsize: "<<myAtlas.getStableMap().points.size()<<endl;
+            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
+            cout<<"i:"<< i <<endl;
+            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+        }
+        ROS_ERROR("No convergence In full ICP!");
     }
 }
 void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
@@ -148,11 +154,20 @@ void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
 
     pcl::PointCloud<pcl::PointXYZ> Final;
     icp.align(Final, initialGuessOfICP);
-
+    pcl::Correspondences currentCorrespondences = *icp.correspondences_;
 
     if(icp.hasConverged()){
         /*Do not update the pose here*/
     }else{
+        for(int i = 0; i < currentCorrespondences.size(); i++){
+            cout<<"localMapsize: "<<localMap.points.size()<<endl;
+            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
+            cout<<"i:"<< i <<endl;
+            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+        }
         ROS_ERROR("No convergence In full ICP!");
     }
     //To Edit Map (landmark form velodyne to map)
@@ -164,7 +179,6 @@ void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
     ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
     ptsToBeAddedToMap.channels[IdxInFullMap].values.resize(ptsToBeAddedToMap.points.size());
 
-    pcl::Correspondences currentCorrespondences = *icp.correspondences_;
     for(int i = 0; i < currentCorrespondences.size(); i++){
 //        cout<<"localMapsize: "<<localMap.points.size()<<endl;
 //        cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
@@ -268,7 +282,7 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     temp_map.channels.resize(4);
     temp_map.channels[BirthTime].name = "BirthTime";
     temp_map.channels[TrackingTimes].name = "TrackingTimes";
-    temp_map.channels[BirthTime].values.resize(temp_map.points.size(), ros::Time::now().toSec()-initialTime);
+    temp_map.channels[BirthTime].values.resize(temp_map.points.size(), pointsToBeAdded.header.stamp.toSec()-initialTime);
     temp_map.channels[TrackingTimes].values.resize(temp_map.points.size(),0);
     fullLandMarks.points.insert(fullLandMarks.points.end(), temp_map.points.begin(), temp_map.points.end());
     fullLandMarks.channels[BirthTime].values.insert(fullLandMarks.channels[BirthTime].values.end(),
@@ -277,7 +291,7 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
                         temp_map.channels[TrackingTimes].values.begin(), temp_map.channels[TrackingTimes].values.end());
 
     /*Eliminate the Points with long time and Low tracking time.*/
-    double currentTime = ros::Time::now().toSec()-initialTime;
+    double currentTime = pointsToBeAdded.header.stamp.toSec()-initialTime;
     for(int i = 0; i < fullLandMarks.points.size(); i ++){
         if(currentTime - fullLandMarks.channels[BirthTime].values[i] > birthTimeThreshould &&
         fullLandMarks.channels[TrackingTimes].values[i] < TrackingTimesThreshould && currentTime > removalBeginTime){
@@ -289,13 +303,13 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
             }
         }
     }
-    if( currentTime < 10){
+    if( currentTime < stableTimeThreshould){
         stableMap.points = fullLandMarks.points;
         return;
     }
     stableMap.points.clear();
     for(int i = 0; i < fullLandMarks.points.size(); i ++){
-        if(fullLandMarks.channels[TrackingTimes].values[i] > 10){
+        if(fullLandMarks.channels[TrackingTimes].values[i] > stableTrackingThreshould){
             stableMap.points.push_back(fullLandMarks.points[i]);
         }
     }
@@ -333,6 +347,7 @@ sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform curren
 }
 
 void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
+    initialTime = initialPCL.header.stamp.toSec();
     map_name = globalFrame;
     lidar_name = initialPCL.header.frame_id;
 
@@ -344,6 +359,6 @@ void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, st
     fullLandMarks.channels.resize(4);
     fullLandMarks.channels[BirthTime].name = "BirthTime";
     fullLandMarks.channels[TrackingTimes].name = "TrackingTimes";
-    fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), ros::Time::now().toSec()-initialTime);
+    fullLandMarks.channels[BirthTime].values.resize(fullLandMarks.points.size(), initialPCL.header.stamp.toSec()-initialTime);
     fullLandMarks.channels[TrackingTimes].values.resize(fullLandMarks.points.size(),0);
 }

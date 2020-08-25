@@ -1,5 +1,5 @@
 <launch>
-
+  <!--param name="use_sim_time" value="true" /-->
   <node name="treeCenterLocalization" pkg="dbscan" type="treeCenterLocalization_node" output= "screen">
     <param name="laser_name" type="string" value="/velodyne"/>
     <param name="base_link_name" type="string" value="/base_link"/>
@@ -12,10 +12,12 @@
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
     <param name="localMapRadius" type="double" value="100"/>
 
+    <param name="stableTimeThreshould" type="double" value="10.0"/>
+    <param name="stableTrackingThreshould" type="double" value="30"/>
 
     <param name="birthTimeThreshould" type="double" value="5.0"/>
-    <param name="TrackingTimesThreshould" type="double" value="50.0"/>
-    <param name="removalBeginTime" type="double" value="1.0"/>
+    <param name="TrackingTimesThreshould" type="double" value="5.0"/>
+    <param name="removalBeginTime" type="double" value="10.0"/>
   </node>
 
   <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" >
@@ -46,7 +48,7 @@
 
       <!-- DBSCAN's Parameter -->
       <!-- EPS大一点可以让杂草聚在一起变成strange：0.45，小一点可以识别到更多的树0.2 -->
-      <param name="EPS" type="double" value="0.2"/>
+      <param name="EPS" type="double" value="0.15"/>
       <param name="MinPts" type="int" value="5"/>
       <param name="min_cluster" type="int" value="8"/>
 
