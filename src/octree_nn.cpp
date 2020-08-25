@@ -213,7 +213,7 @@ bool OctreeDriver::searchOctreeRadiusNN(vector<double> goal, sensor_msgs::PointC
 }
 
 void OctreeDriver::octreeConstructFromPCL(sensor_msgs::PointCloud &PCL) {
-    ROS_INFO("There is all %d point(s).",int(PCL.points.size()));
+    //ROS_INFO("There is all %d point(s).",int(PCL.points.size()));
     double max_x=-INFINITY, max_y=-INFINITY, max_z=-INFINITY, min_x =INFINITY, min_y=INFINITY, min_z=INFINITY;
     for(int i = 0; i < PCL.points.size();  i++ ){
         if(PCL.points[i].x < min_x) min_x = PCL.points[i].x;
@@ -243,7 +243,7 @@ void OctreeDriver::octreeConstructFromPCL(sensor_msgs::PointCloud &PCL) {
     startTime = clock();//计时开始
     buildOctree(root, PCL, center, extent, point_indice, leafsize, min_extent);
     endTime = clock();//计时结束
-    cout << "The run Octree build time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    //cout << "The run Octree build time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 void OctreeDriver::octreeNNdemo(sensor_msgs::PointCloud& PCL){

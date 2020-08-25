@@ -51,6 +51,7 @@ private:
     enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3};
     double localMapRadius;
     OctreeDriver oldDriver;
+    sensor_msgs::PointCloud stableMap;
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
@@ -62,9 +63,9 @@ private:
     void mapRefine();
 public:
     TreeAtlas(){
-        ros::param::get("~laser_name", birthTimeThreshould);
-        ros::param::get("~base_link_name",TrackingTimesThreshould);
-        ros::param::get("~odom_name",removalBeginTime);
+        ros::param::get("~birthTimeThreshould", birthTimeThreshould);
+        ros::param::get("~TrackingTimesThreshould",TrackingTimesThreshould);
+        ros::param::get("~removalBeginTime",removalBeginTime);
         localMap.channels.resize(4);
         localMap.channels[IdxInFullMap].name = "IdxInFullMap";
     }
@@ -72,6 +73,7 @@ public:
     sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
     void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF);
     sensor_msgs::PointCloud getFullAtlas(){return fullLandMarks;}
+    sensor_msgs::PointCloud getStableMap(){return stableMap;}
 };
 
 
@@ -111,6 +113,8 @@ private:
 
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
     void addOnePtToMap(geometry_msgs::Point32 new_landmark);
+    void ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
+    void ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
 
 public:
     TreeCenterLocalization(){

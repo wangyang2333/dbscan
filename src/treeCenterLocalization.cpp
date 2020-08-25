@@ -11,10 +11,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         myAtlas.atlasIntializationWithPCL(*landmarkPCL, map_name);
 
         firstTrackFlag = false;
-        //Read the static TF
-//        listener.waitForTransform(base_link_name, lidar_name, ros::Time(0), ros::Duration(3.0));
-//        listener.lookupTransform(base_link_name, lidar_name, ros::Time(0), velodyne_to_base);
-        //(publish tf from velodyne to map (zero transform))
+
         velodyne_to_map.setIdentity();
         my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
 
@@ -26,103 +23,161 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
         my_pose_publisher.publish(my_pose);
     }else{
-        /*Track with current map*/
-        sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
-
-        //Transform datatype to use PCL LIB
-        pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
-        pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
-
-        sensor_msgs::PointCloud2 ROS_PCL2_temp;
-        pcl::PCLPointCloud2 PCL_PCL2_temp;
-
-        sensor_msgs::convertPointCloudToPointCloud2(localMap, ROS_PCL2_temp);
-        pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
-        pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
-
-        sensor_msgs::convertPointCloudToPointCloud2(*landmarkPCL, ROS_PCL2_temp);
-        pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
-        pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_obsCloud);
-
-        //Configure and run ICP
-        pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-        icp.setInputSource(PCL_obsCloud);
-        icp.setInputTarget (PCL_mapCloud);
-
-
-        // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-        icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
-        // Set the maximum number of iterations (criterion 1)
-        icp.setMaximumIterations (MaximumIterations);
-        // Set the transformation epsilon (criterion 2)
-        icp.setTransformationEpsilon (setTransformationEpsilon);
-        // Set the euclidean distance difference epsilon (criterion 3)
-        icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
-
-        icp.setRANSACIterations(100);
-        icp.setRANSACOutlierRejectionThreshold(0.5);
-
-        icp.setUseReciprocalCorrespondences (true);
-
-        pcl::PointCloud<pcl::PointXYZ> Final;
-        icp.align(Final, initialGuessOfICP);
-
-        std::cout << "has converged: " << icp.hasConverged() <<std::endl;
-        std::cout << "score: " <<icp.getFitnessScore() << std::endl;
-        //std::cout << icp.getFinalTransformation() << std::endl;
-
-        if(icp.hasConverged()){
-            //Publish TF from velodyne to map
-            tf::Matrix3x3 tempMat3x3;
-            tf::Vector3  tempVec3;
-            tf::Quaternion tempQ;
-            Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
-            initialGuessOfICP = icp.getFinalTransformation ();
-            Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
-            Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
-            tf::matrixEigenToTF(tempRotation, tempMat3x3);
-            tf::vectorEigenToTF(tempTranslation, tempVec3);
-            /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
-            velodyne_to_map.setOrigin(tempVec3);
-            tempMat3x3.getRotation(tempQ);
-            velodyne_to_map.setRotation(tempQ);
-            my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
-
-            my_pose.header.frame_id = map_name;
-            my_pose.header.stamp = ros::Time::now();
-            my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
-            my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
-            my_pose.pose.position.z = 0;
-            tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
-            my_pose_publisher.publish(my_pose);
-        }else{
-            ROS_ERROR("No convergence!");
-        }
-        //To Edit Map (landmark form velodyne to map)
-        /*To find new coming point*/
-        sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
-        ptsToBeAddedToMap.channels.resize(4);
-        ptsToBeAddedToMap.channels[TrackSuccess].name = "trackSuccess";
-        ptsToBeAddedToMap.channels[TrackSuccess].values.resize(ptsToBeAddedToMap.points.size());
-        ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
-        ptsToBeAddedToMap.channels[IdxInFullMap].values.resize(ptsToBeAddedToMap.points.size());
-
-        pcl::Correspondences currentCorrespondences = *icp.correspondences_;
-        for(int i = 0; i < currentCorrespondences.size(); i++){
-            cout<<"localMapsize: "<<localMap.points.size()<<endl;
-            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
-            cout<<"i:"<< i <<endl;
-            cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
-            cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
-            cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
-            cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
-            ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondences[i].index_query] = 1;
-            ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
-                    localMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_match];
-        }
-        myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
+        ICPwithStableMap(landmarkPCL);
+        ICPwithfullLandmarks(landmarkPCL);
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
+}
+
+void TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+    //Transform datatype to use PCL LIB
+    pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+    sensor_msgs::PointCloud2 ROS_PCL2_temp;
+    pcl::PCLPointCloud2 PCL_PCL2_temp;
+
+    sensor_msgs::convertPointCloudToPointCloud2(myAtlas.getStableMap(), ROS_PCL2_temp);
+    pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
+    pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
+
+    sensor_msgs::convertPointCloudToPointCloud2(*landmarkPCL, ROS_PCL2_temp);
+    pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
+    pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_obsCloud);
+
+    //Configure and run ICP
+    pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+    icp.setInputSource(PCL_obsCloud);
+    icp.setInputTarget (PCL_mapCloud);
+
+
+    // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+    icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
+    // Set the maximum number of iterations (criterion 1)
+    icp.setMaximumIterations (MaximumIterations);
+    // Set the transformation epsilon (criterion 2)
+    icp.setTransformationEpsilon (setTransformationEpsilon);
+    // Set the euclidean distance difference epsilon (criterion 3)
+    icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
+
+//        icp.setRANSACIterations(100);
+//        icp.setRANSACOutlierRejectionThreshold(0.5);
+
+    icp.setUseReciprocalCorrespondences (true);
+
+    pcl::PointCloud<pcl::PointXYZ> Final;
+    icp.align(Final, initialGuessOfICP);
+
+    if(icp.hasConverged()){
+        //Publish TF from velodyne to map
+        cout<<icp.getFinalTransformation ()<<endl;
+        for(int i = 0; i < (*icp.correspondences_).size(); i++){
+            cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
+            cout<<"localMapsize: "<<myAtlas.getStableMap().points.size()<<endl;
+            cout<<"i:"<< i <<endl;
+            cout<<"index_match:"<<(*icp.correspondences_)[i].index_match<<endl;
+            cout<<"index_query:"<<(*icp.correspondences_)[i].index_query<<endl;
+            cout<<"distance:"<<(*icp.correspondences_)[i].distance<<endl;
+            cout<<"weight:"<<(*icp.correspondences_)[i].weight<<endl;
+        }
+        //OutputTest------------------------
+        tf::Matrix3x3 tempMat3x3;
+        tf::Vector3  tempVec3;
+        tf::Quaternion tempQ;
+        Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
+        initialGuessOfICP = icp.getFinalTransformation ();
+        Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
+        Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
+        tf::matrixEigenToTF(tempRotation, tempMat3x3);
+        tf::vectorEigenToTF(tempTranslation, tempVec3);
+        /////tempMat3x3 = velodyne_to_map.getRotation() * tempMat3x3;
+        velodyne_to_map.setOrigin(tempVec3);
+        tempMat3x3.getRotation(tempQ);
+        velodyne_to_map.setRotation(tempQ);
+        my_br.sendTransform(tf::StampedTransform(velodyne_to_map, ros::Time::now(), map_name, lidar_name));
+
+        my_pose.header.frame_id = map_name;
+        my_pose.header.stamp = ros::Time::now();
+        my_pose.pose.position.x = velodyne_to_map.getOrigin().getX();
+        my_pose.pose.position.y = velodyne_to_map.getOrigin().getY();
+        my_pose.pose.position.z = 0;
+        tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
+        my_pose_publisher.publish(my_pose);
+    }else{
+        ROS_ERROR("No convergence In Stable ICP!");
+    }
+}
+void TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+    /*Track with current map*/
+    sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
+
+    //Transform datatype to use PCL LIB
+    pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+    sensor_msgs::PointCloud2 ROS_PCL2_temp;
+    pcl::PCLPointCloud2 PCL_PCL2_temp;
+
+    sensor_msgs::convertPointCloudToPointCloud2(localMap, ROS_PCL2_temp);
+    pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
+    pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
+
+    sensor_msgs::convertPointCloudToPointCloud2(*landmarkPCL, ROS_PCL2_temp);
+    pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
+    pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_obsCloud);
+
+    //Configure and run ICP
+    pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+    icp.setInputSource(PCL_obsCloud);
+    icp.setInputTarget (PCL_mapCloud);
+
+
+    // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+    icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
+    // Set the maximum number of iterations (criterion 1)
+    icp.setMaximumIterations (MaximumIterations);
+    // Set the transformation epsilon (criterion 2)
+    icp.setTransformationEpsilon (setTransformationEpsilon);
+    // Set the euclidean distance difference epsilon (criterion 3)
+    icp.setEuclideanFitnessEpsilon (EuclideanFitnessEpsilon);
+
+//        icp.setRANSACIterations(100);
+//        icp.setRANSACOutlierRejectionThreshold(0.5);
+
+    icp.setUseReciprocalCorrespondences (true);
+
+    pcl::PointCloud<pcl::PointXYZ> Final;
+    icp.align(Final, initialGuessOfICP);
+
+
+    if(icp.hasConverged()){
+        /*Do not update the pose here*/
+    }else{
+        ROS_ERROR("No convergence In full ICP!");
+    }
+    //To Edit Map (landmark form velodyne to map)
+    /*To find new coming point*/
+    sensor_msgs::PointCloud ptsToBeAddedToMap = *landmarkPCL;
+    ptsToBeAddedToMap.channels.resize(4);
+    ptsToBeAddedToMap.channels[TrackSuccess].name = "trackSuccess";
+    ptsToBeAddedToMap.channels[TrackSuccess].values.resize(ptsToBeAddedToMap.points.size());
+    ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
+    ptsToBeAddedToMap.channels[IdxInFullMap].values.resize(ptsToBeAddedToMap.points.size());
+
+    pcl::Correspondences currentCorrespondences = *icp.correspondences_;
+    for(int i = 0; i < currentCorrespondences.size(); i++){
+//        cout<<"localMapsize: "<<localMap.points.size()<<endl;
+//        cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
+//        cout<<"i:"<< i <<endl;
+//        cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
+//        cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
+//        cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
+//        cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
+        ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondences[i].index_query] = 1;
+        ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
+                localMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_match];
+    }
+    myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
 }
 
 geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame){
@@ -188,7 +243,7 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
 
 void TreeAtlas::mapRefine() {
     for(int i = 0; i < fullLandMarks.points.size(); i++){
-        //see time and
+        //TODO:Map Refine
     }
 }
 
@@ -221,17 +276,27 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
     fullLandMarks.channels[TrackingTimes].values.insert(fullLandMarks.channels[TrackingTimes].values.end(),
                         temp_map.channels[TrackingTimes].values.begin(), temp_map.channels[TrackingTimes].values.end());
 
-    //TODO: Eliminate the Points with long time and Low tracking time.
+    /*Eliminate the Points with long time and Low tracking time.*/
     double currentTime = ros::Time::now().toSec()-initialTime;
     for(int i = 0; i < fullLandMarks.points.size(); i ++){
         if(currentTime - fullLandMarks.channels[BirthTime].values[i] > birthTimeThreshould &&
         fullLandMarks.channels[TrackingTimes].values[i] < TrackingTimesThreshould && currentTime > removalBeginTime){
-            ROS_WARN("ERASE");
+            //ROS_WARN("ERASE");
             fullLandMarks.points.erase(fullLandMarks.points.begin() + i);
             for(int ch = 0; ch < fullLandMarks.channels.size(); ch++){
-                if(fullLandMarks.channels[ch].values.size() == fullLandMarks.points.size())
+                if(fullLandMarks.channels[ch].values.size() == fullLandMarks.points.size() + 1)
                 fullLandMarks.channels[ch].values.erase(i + fullLandMarks.channels[ch].values.begin());
             }
+        }
+    }
+    if( currentTime < 10){
+        stableMap.points = fullLandMarks.points;
+        return;
+    }
+    stableMap.points.clear();
+    for(int i = 0; i < fullLandMarks.points.size(); i ++){
+        if(fullLandMarks.channels[TrackingTimes].values[i] > 10){
+            stableMap.points.push_back(fullLandMarks.points[i]);
         }
     }
 }
@@ -239,8 +304,6 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
 /*get Radius NN PCL on Octree*/
 /*Find Landmarks point with it's index*/
 sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform currentTF){
-    //TODO: Newly added points can not be used as landmark
-    //TODO: First ICP with Old pts, then ICP with New Pts;
     localMap.points.clear();
     localMap.channels[IdxInFullMap].values.clear();
     /*Build Octree with full landmarks*/
@@ -272,6 +335,10 @@ sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform curren
 void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
     map_name = globalFrame;
     lidar_name = initialPCL.header.frame_id;
+
+    stableMap.header.frame_id = map_name;
+    stableMap.points = initialPCL.points;
+
     fullLandMarks.header.frame_id = map_name;
     fullLandMarks.points = initialPCL.points;
     fullLandMarks.channels.resize(4);
