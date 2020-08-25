@@ -59,10 +59,10 @@ private:
     double stableTimeThreshould, stableTrackingThreshould;
     double birthTimeThreshould, TrackingTimesThreshould, removalBeginTime;
     double initialTime;
-    void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
+    static void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
-                                     sensor_msgs::PointCloud & cloudOut) const;
-    void mapRefine();
+                                     sensor_msgs::PointCloud & cloudOut) ;
+    void mapRefine() const;
 public:
     TreeAtlas(){
         ros::param::get("~stableTimeThreshould", stableTimeThreshould);
@@ -73,9 +73,9 @@ public:
         localMap.channels.resize(4);
         localMap.channels[IdxInFullMap].name = "IdxInFullMap";
     }
-    void atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame);
+    void atlasIntializationWithPCL(const sensor_msgs::PointCloud& initialPCL, string globalFrame);
     sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
-    void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF);
+    void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, const tf::StampedTransform& currentTF);
     sensor_msgs::PointCloud getFullAtlas(){return fullLandMarks;}
     sensor_msgs::PointCloud getStableMap(){return stableMap;}
 };
@@ -116,8 +116,8 @@ private:
     nav_msgs::Odometry my_odometry;
     ros::Publisher my_odometry_publisher;
 
-    geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, string targetFrame);
-    void addOnePtToMap(geometry_msgs::Point32 new_landmark);
+    geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, const string& targetFrame);
+
     bool ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
     bool ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
 

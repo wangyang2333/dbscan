@@ -4,6 +4,8 @@
 
 #include "treeCenterLocalization.h"
 
+#include <utility>
+
 void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL){
     clock_t startTime, endTime;
     startTime = clock();//计时开始
@@ -59,7 +61,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
     icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
     // Set the maximum number of iterations (criterion 1)
-    icp.setMaximumIterations (MaximumIterations);
+    icp.setMaximumIterations (int(MaximumIterations));
     // Set the transformation epsilon (criterion 2)
     icp.setTransformationEpsilon (setTransformationEpsilon);
     // Set the euclidean distance difference epsilon (criterion 3)
@@ -73,7 +75,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     pcl::PointCloud<pcl::PointXYZ> Final;
     icp.align(Final, initialGuessOfICP);
     pcl::Correspondences currentCorrespondences = *icp.correspondences_;
-    if(1){
+    if(icp.hasConverged()){
         //Publish TF from velodyne to map
         tf::Matrix3x3 tempMat3x3;
         tf::Vector3  tempVec3;
@@ -143,7 +145,7 @@ bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
     // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
     icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
     // Set the maximum number of iterations (criterion 1)
-    icp.setMaximumIterations (MaximumIterations);
+    icp.setMaximumIterations (int(MaximumIterations));
     // Set the transformation epsilon (criterion 2)
     icp.setTransformationEpsilon (setTransformationEpsilon);
     // Set the euclidean distance difference epsilon (criterion 3)
@@ -181,26 +183,19 @@ bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
     ptsToBeAddedToMap.channels[IdxInFullMap].name = "IdxInFullMap";
     ptsToBeAddedToMap.channels[IdxInFullMap].values.resize(ptsToBeAddedToMap.points.size());
 
-    for(int i = 0; i < currentCorrespondences.size(); i++){
-//        cout<<"localMapsize: "<<localMap.points.size()<<endl;
-//        cout<<"scanSize: "<<landmarkPCL->points.size()<<endl;
-//        cout<<"i:"<< i <<endl;
-//        cout<<"index_match:"<<currentCorrespondences[i].index_match<<endl;
-//        cout<<"index_query:"<<currentCorrespondences[i].index_query<<endl;
-//        cout<<"distance:"<<currentCorrespondences[i].distance<<endl;
-//        cout<<"weight:"<<currentCorrespondences[i].weight<<endl;
-        ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondences[i].index_query] = 1;
-        ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_query] =
-                localMap.channels[IdxInFullMap].values[currentCorrespondences[i].index_match];
+    for(auto & currentCorrespondence : currentCorrespondences){
+        ptsToBeAddedToMap.channels[TrackSuccess].values[currentCorrespondence.index_query] = 1;
+        ptsToBeAddedToMap.channels[IdxInFullMap].values[currentCorrespondence.index_query] =
+                localMap.channels[IdxInFullMap].values[currentCorrespondence.index_match];
     }
     myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
     return icp.hasConverged();
 }
 
 geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame,
-                                                           string targetFrame){
+                                                           const string& targetFrame){
     geometry_msgs::PointStamped sourcePointStamped;
-    sourcePointStamped.header.frame_id = sourceFrame;
+    sourcePointStamped.header.frame_id = std::move(sourceFrame);
 
     sourcePointStamped.point.x = sourcePoint.x;
     sourcePointStamped.point.y = sourcePoint.y;
@@ -216,20 +211,10 @@ geometry_msgs::Point32 TreeCenterLocalization::changeFrame(geometry_msgs::Point3
     return pt_out;
 }
 
-void TreeCenterLocalization::addOnePtToMap(geometry_msgs::Point32 new_landmark){
-    //add new tree to map_cloud
-    geometry_msgs::Point32 finalPt;
-    finalPt = changeFrame(new_landmark,lidar_name,map_name);
-    myAtlas.fullLandMarks.points.push_back(finalPt);
-    //TreeId------map_cloud.channels[0].values.push_back(new_landmark);
-
-}
-
-
 
 void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                             const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
-                                            sensor_msgs::PointCloud & cloudOut) const
+                                            sensor_msgs::PointCloud & cloudOut)
 {
     tf::Vector3 origin = net_transform.getOrigin();
     tf::Matrix3x3 basis  = net_transform.getBasis();
@@ -257,13 +242,13 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
     }
 }
 
-void TreeAtlas::mapRefine() {
+void TreeAtlas::mapRefine() const {
     for(int i = 0; i < fullLandMarks.points.size(); i++){
         //TODO:Map Refine
     }
 }
 
-void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf::StampedTransform currentTF) {
+void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, const tf::StampedTransform& currentTF) {
     //fullLandMarks.points.clear();
     /*If tracked? erase it. All new point coming points left now*/
     for(int i =0; i < pointsToBeAdded.points.size(); i++){
@@ -299,9 +284,9 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, tf
         fullLandMarks.channels[TrackingTimes].values[i] < TrackingTimesThreshould && currentTime > removalBeginTime){
             //ROS_WARN("ERASE");
             fullLandMarks.points.erase(fullLandMarks.points.begin() + i);
-            for(int ch = 0; ch < fullLandMarks.channels.size(); ch++){
-                if(fullLandMarks.channels[ch].values.size() == fullLandMarks.points.size() + 1)
-                fullLandMarks.channels[ch].values.erase(i + fullLandMarks.channels[ch].values.begin());
+            for(auto & channel : fullLandMarks.channels){
+                if(channel.values.size() == fullLandMarks.points.size() + 1)
+                channel.values.erase(i + channel.values.begin());
             }
         }
     }
@@ -348,9 +333,9 @@ sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform curren
     return localMap;
 }
 
-void TreeAtlas::atlasIntializationWithPCL(sensor_msgs::PointCloud initialPCL, string globalFrame){
+void TreeAtlas::atlasIntializationWithPCL(const sensor_msgs::PointCloud& initialPCL, string globalFrame){
     initialTime = initialPCL.header.stamp.toSec();
-    map_name = globalFrame;
+    map_name = std::move(globalFrame);
     lidar_name = initialPCL.header.frame_id;
 
     stableMap.header.frame_id = map_name;
