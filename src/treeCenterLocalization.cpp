@@ -13,7 +13,6 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
     if(firstTrackFlag){
         ROS_WARN("First Track, build map with all points.");
         myAtlas.atlasIntializationWithPCL(*landmarkPCL, map_name);
-
         firstTrackFlag = false;
 
         velodyne_to_map.setIdentity();

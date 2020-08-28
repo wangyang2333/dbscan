@@ -1,10 +1,10 @@
 <launch>
   <!--param name="use_sim_time" value="true" /-->
   <node name="treeCenterLocalization" pkg="dbscan" type="treeCenterLocalization_node" output= "screen">
-    <param name="laser_name" type="string" value="/velodyne"/>
-    <param name="base_link_name" type="string" value="/base_link"/>
-    <param name="odom_name" type="string" value="/odom_fuck"/>
-    <param name="map_name" type="string" value="/map_fuck"/>
+    <param name="laser_name" type="string" value="/velodyne_TSLAM"/>
+    <param name="base_link_name" type="string" value="/base_TSLAM"/>
+    <param name="odom_name" type="string" value="/odom_TSLAM"/>
+    <param name="map_name" type="string" value="/map"/>
 
     <param name="MaxCorrespondenceDistance" type="double" value="2"/>
     <param name="MaximumIterations" type="int" value="30"/>
@@ -27,6 +27,7 @@
       <param name="scan_range" type="double" value="8.0"/>
 
       <!-- Topic Name-->
+      <param name="laser_name" type="string" value="/velodyne_TSLAM"/>
       <param name="tree_point" type="string" value="/tree_pt"/>
       <param name="scan_topic_name" type="string" value="/velodyne_points"/>
 
@@ -48,7 +49,7 @@
 
       <!-- DBSCAN's Parameter -->
       <!-- EPS大一点可以让杂草聚在一起变成strange：0.45，小一点可以识别到更多的树0.2 -->
-      <param name="EPS" type="double" value="0.15"/>
+      <param name="EPS" type="double" value="0.2"/>
       <param name="MinPts" type="int" value="5"/>
       <param name="min_cluster" type="int" value="8"/>
 

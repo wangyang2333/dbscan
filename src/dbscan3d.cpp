@@ -55,6 +55,7 @@ double confidence;
 double inlinerThreshold;
 double ratioCondition;
 double upperBorder;
+string laser_name;
 
 
 class point{
@@ -202,6 +203,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
         }
     }
     tree_visual_cloud_pub.publish(dataset);
+    treeCenters.header = dataset.header;
     tree_cloud_pub.publish(treeCenters);
 }
 
@@ -309,6 +311,8 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
     }
 
     sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
+    dataset.header = input->header;
+    dataset.header.frame_id = laser_name;
     DBSCAN(dataset,EPS,MinPts);
 
 //    //ORIGINAL DBSCAN
@@ -364,6 +368,7 @@ int main(int argc, char** argv) {
     ros::param::get("~ratioCondition",ratioCondition);
     ros::param::get("~upperBorder",upperBorder);
     ros::param::get("~sampleNum",sampleNum);
+    ros::param::get("~laser_name",laser_name);
 
 
 
