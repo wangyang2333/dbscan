@@ -14,7 +14,7 @@
 
 using namespace std;
 
-class NewDbscanDriver{
+class DbscanDriver{
 private:
     OctreeDriver oldDriver;
     double EPS ;
