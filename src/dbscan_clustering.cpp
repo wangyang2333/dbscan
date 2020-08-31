@@ -4,7 +4,7 @@
 
 #include "dbscan_clustering.h"
 
-void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<int> currentIndex, double currentCluster, sensor_msgs::PointCloud &PCL){
+void NewDbscanDriver::clusterVector(vector<vector<double>> currentVector, vector<int> currentIndex, double currentCluster, sensor_msgs::PointCloud &PCL){
     for(int i = 0; i < currentVector.size(); i++){
         /*Skip the visited point*/
         if(PCL.channels[visited].values[currentIndex[i]] == 1.0){
@@ -31,7 +31,7 @@ void DBscanDriver::clusterVector(vector<vector<double>> currentVector, vector<in
     return;
 }
 
-void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
+void NewDbscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
     /*Open PCL channels*/
     PCLforOutput = PCL;
     PCLforOutput.channels.clear();
@@ -69,7 +69,7 @@ void DBscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
             PCLforOutput.channels[type].values[i] = noise;
         }
     }
-//    for(int i = 0; i < PCLforOutput.points.size(); i++){cout<<PCLforOutput.channels[DBscanDriver::cluster].values[i];}
+//    for(int i = 0; i < PCLforOutput.points.size(); i++){cout<<PCLforOutput.channels[NewDbscanDriver::cluster].values[i];}
 
     return;
 }

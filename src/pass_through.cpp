@@ -67,8 +67,8 @@ void passThroughTesting(sensor_msgs::PointCloud& dataset, vector<int> Idx){
 
     if(passThrough){
         for(int k = 0; k < Idx.size(); k++){
-            dataset.channels[DBscanDriver::type].values[Idx[k]] = DBscanDriver::pass;
-            dataset.channels[DBscanDriver::cluster].values[Idx[k]] = 0.0;
+            dataset.channels[NewDbscanDriver::type].values[Idx[k]] = NewDbscanDriver::pass;
+            dataset.channels[NewDbscanDriver::cluster].values[Idx[k]] = 0.0;
         }
     }else{
 

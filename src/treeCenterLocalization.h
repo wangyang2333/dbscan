@@ -49,16 +49,16 @@ using namespace std;
 class TreeAtlas{
     friend class TreeCenterLocalization;
 private:
-    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3};
-    double localMapRadius;
+    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3, Activation = 4};
+    double localMapRadius{};
     OctreeDriver oldDriver;
     sensor_msgs::PointCloud stableMap;
     sensor_msgs::PointCloud fullLandMarks;
     sensor_msgs::PointCloud localMap;
     string map_name, lidar_name;
-    double stableTimeThreshould, stableTrackingThreshould;
-    double birthTimeThreshould, TrackingTimesThreshould, removalBeginTime;
-    double initialTime;
+    double stableTimeThreshould{}, stableTrackingThreshould{};
+    double birthTimeThreshould{}, TrackingTimesThreshould{}, removalBeginTime{};
+    double initialTime{};
     static void realTimeTransformPointCloud(const std::string & target_frame, const tf::Transform& net_transform,
                                      const ros::Time& target_time, const sensor_msgs::PointCloud & cloudIn,
                                      sensor_msgs::PointCloud & cloudOut) ;
@@ -85,7 +85,7 @@ public:
 class TreeCenterLocalization {
     friend TreeAtlas;
 private:
-    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3};
+    enum {TrackSuccess = 0, IdxInFullMap = 1, BirthTime = 2, TrackingTimes = 3, Activation = 4};
     void tree_callback(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
     ros::NodeHandle nh_;
     ros::Subscriber landmarkPCL_sub;
@@ -109,6 +109,7 @@ private:
     double localMapRadius;
 
     bool firstTrackFlag;
+    Eigen::Matrix<float, 4, 4> lastPoseOfICP;
     Eigen::Matrix<float, 4, 4> initialGuessOfICP;
 
     geometry_msgs::PoseStamped my_pose;
@@ -116,10 +117,15 @@ private:
     nav_msgs::Odometry my_odometry;
     ros::Publisher my_odometry_publisher;
 
-    geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint, string sourceFrame, const string& targetFrame);
 
+    geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint,
+                                       string sourceFrame,
+                                       const string& targetFrame);
     bool ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
     bool ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL);
+    static void posePredict(Eigen::Matrix<float, 4, 4> tfA,
+                                                Eigen::Matrix<float, 4, 4> tfB,
+                                                Eigen::Matrix<float, 4, 4>& result);
 
 public:
     TreeCenterLocalization(){
@@ -143,7 +149,7 @@ public:
         my_odometry_publisher = nh_.advertise<nav_msgs::Odometry>("my_Odometry", 10);
 
         firstTrackFlag = true;
-        initialGuessOfICP.setIdentity();
+        lastPoseOfICP.setIdentity();
     }
 
 };

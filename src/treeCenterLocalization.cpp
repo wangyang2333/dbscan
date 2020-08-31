@@ -25,6 +25,8 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         my_pose.pose.position.z = 0;
         tf::quaternionTFToMsg(velodyne_to_map.getRotation(), my_pose.pose.orientation);
         my_pose_publisher.publish(my_pose);
+        lastPoseOfICP.setIdentity();
+        initialGuessOfICP.setIdentity();
     }else{
         if(ICPwithStableMap(landmarkPCL)){
             ICPwithfullLandmarks(landmarkPCL);
@@ -33,6 +35,19 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
     endTime = clock();//计时结束
     cout << "The run CallBack localization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+}
+
+void TreeCenterLocalization::posePredict(Eigen::Matrix<float, 4, 4> tfA,
+                                                             Eigen::Matrix<float, 4, 4> tfB,
+                                                             Eigen::Matrix<float, 4, 4>& result) {
+    result.block<3,3>(0,0) = tfB.block<3,3>(0,0).inverse();
+    result.block<3,1>(0,3) = -1*tfB.block<3,3>(0,0).inverse() * tfB.block<3,1>(0,3);
+    result.block<1,3>(3,0).setZero();
+    result.block<1,1>(3,3).setConstant(1);
+    /*This prediction seems to cause divergence*/
+    //result = tfA * result * tfA;
+    result = tfA;
+    result.block<1,1>(3,2).setConstant(0);
 }
 
 bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
@@ -72,15 +87,23 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     icp.setUseReciprocalCorrespondences (true);
 
     pcl::PointCloud<pcl::PointXYZ> Final;
+
+
     icp.align(Final, initialGuessOfICP);
+
     pcl::Correspondences currentCorrespondences = *icp.correspondences_;
     if(icp.hasConverged()){
+        /*Use a constant velocity to generate an initial guess*/
+        posePredict(icp.getFinalTransformation(), lastPoseOfICP, initialGuessOfICP);
+        lastPoseOfICP = icp.getFinalTransformation();
+
         //Publish TF from velodyne to map
         tf::Matrix3x3 tempMat3x3;
         tf::Vector3  tempVec3;
         tf::Quaternion tempQ;
         Eigen::Matrix4d transformation = icp.getFinalTransformation ().cast<double>();
-        initialGuessOfICP = icp.getFinalTransformation ();
+        lastPoseOfICP = icp.getFinalTransformation ();
+
         Eigen::Matrix3d tempRotation = transformation.block<3,3>(0,0);//In eigen type Must be equal!!!!
         Eigen::Vector3d tempTranslation = transformation.block<3,1>(0,3);
         tf::matrixEigenToTF(tempRotation, tempMat3x3);
@@ -156,7 +179,8 @@ bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
     icp.setUseReciprocalCorrespondences (true);
 
     pcl::PointCloud<pcl::PointXYZ> Final;
-    icp.align(Final, initialGuessOfICP);
+    /*need a initial value from stable ICP*/
+    icp.align(Final, lastPoseOfICP);
     pcl::Correspondences currentCorrespondences = *icp.correspondences_;
 
     if(icp.hasConverged()){
@@ -238,12 +262,6 @@ void TreeAtlas::realTimeTransformPointCloud(const std::string & target_frame, co
         double y = basis[1].x() * cloudIn.points[i].x + basis[1].y() * cloudIn.points[i].y + basis[1].z() * cloudIn.points[i].z + origin.y();
         double z = basis[2].x() * cloudIn.points[i].x + basis[2].y() * cloudIn.points[i].y + basis[2].z() * cloudIn.points[i].z + origin.z();
         cloudOut.points[i].x = x; cloudOut.points[i].y = y; cloudOut.points[i].z = z;
-    }
-}
-
-void TreeAtlas::mapRefine() const {
-    for(int i = 0; i < fullLandMarks.points.size(); i++){
-        //TODO:Map Refine
     }
 }
 
