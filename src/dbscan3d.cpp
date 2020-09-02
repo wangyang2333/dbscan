@@ -29,7 +29,7 @@
 //#include "gmm_EM.h"
 //#include "spectral_clustering.h"
 #include "groundRemovalRANSAC.h"
-#include "dbscan_clustering.h"
+#include "dbscan_correction.h"
 #include "pass_through.h"
 //#include "fpfh_pcl.h"
 
@@ -122,7 +122,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     /*Run DBscan*/
     clock_t startTime,endTime;
     startTime = clock();//计时开始
-    DbscanDriver oldDriver;
+    NewDbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
@@ -134,8 +134,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     cout << "The DBSCAN Clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     /*Remove little cluster and add Residual*/
-    auto ClusterBegin = dataset.channels[DbscanDriver::cluster].values.begin();
-    auto ClusterEnd = dataset.channels[DbscanDriver::cluster].values.end();
+    auto ClusterBegin = dataset.channels[NewDbscanDriver::cluster].values.begin();
+    auto ClusterEnd = dataset.channels[NewDbscanDriver::cluster].values.end();
     int maxCluster = (int)*max_element(ClusterBegin, ClusterEnd);
 
     /*Get cluster index*/
@@ -143,14 +143,16 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     currentClusterIdx.resize(maxCluster+1);
 
     for(int j = 0; j < dataset.points.size(); j++){
-        currentClusterIdx[(int)dataset.channels[DbscanDriver::cluster].values[j]].push_back(j);
+        currentClusterIdx[(int)dataset.channels[NewDbscanDriver::cluster].values[j]].push_back(j);
     }
     /*Remove little cluster*/
     for(int j = 1; j < currentClusterIdx.size(); j++){
-        if(currentClusterIdx[j].size() < min_cluster){
+        double temp_dist = dataset.points[currentClusterIdx[j].front()].x*dataset.points[currentClusterIdx[j].front()].x
+                +dataset.points[currentClusterIdx[j].front()].y*dataset.points[currentClusterIdx[j].front()].y;
+        if(currentClusterIdx[j].size() < (min_cluster / temp_dist) ){
             for(int i = 0; i < currentClusterIdx[j].size(); i++){
-                dataset.channels[DbscanDriver::type].values[currentClusterIdx[j][i]] = DbscanDriver::little;
-                dataset.channels[DbscanDriver::cluster].values[currentClusterIdx[j][i]] = 0.0;
+                dataset.channels[NewDbscanDriver::type].values[currentClusterIdx[j][i]] = NewDbscanDriver::little;
+                dataset.channels[NewDbscanDriver::cluster].values[currentClusterIdx[j][i]] = 0.0;
             }
             currentClusterIdx.erase(currentClusterIdx.begin() + j);
             j--;
@@ -197,8 +199,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
         }else{
             //UNVISUAL NOISE
             for(int k = 0; k < currentClusterIdx[j].size(); k++){
-                dataset.channels[DbscanDriver::type].values[currentClusterIdx[j][k]] = DbscanDriver::strange;
-                dataset.channels[DbscanDriver::cluster].values[currentClusterIdx[j][k]] = 0.0;
+                dataset.channels[NewDbscanDriver::type].values[currentClusterIdx[j][k]] = NewDbscanDriver::strange;
+                dataset.channels[NewDbscanDriver::cluster].values[currentClusterIdx[j][k]] = 0.0;
             }
         }
     }
@@ -213,6 +215,7 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 {
     //Convert sensor_msgs::PointCloud2 to sensor_msgs::PointCloud
     sensor_msgs::PointCloud output;
+    output.header = input->header;
     sensor_msgs::convertPointCloud2ToPointCloud(*input, output);
     cloud_pub.publish(output);
 

@@ -6,7 +6,7 @@
     <param name="odom_name" type="string" value="/odom_TSLAM"/>
     <param name="map_name" type="string" value="/map"/>
 
-    <param name="MaxCorrespondenceDistance" type="double" value="2"/>
+    <param name="MaxCorrespondenceDistance" type="double" value="1"/>
     <param name="MaximumIterations" type="int" value="30"/>
     <param name="TransformationEpsilon" type="double" value="1e-10"/>
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
@@ -47,16 +47,17 @@
       <param name="upperBorder" type="double" value="0.80"/>
       <param name="sampleNum" type="int" value="5"/>
 
-      <!-- DBSCAN's Parameter -->
-      <!-- EPS大一点可以让杂草聚在一起变成strange：0.45，小一点可以识别到更多的树0.2 -->
-      <param name="EPS" type="double" value="0.2"/>
-      <param name="MinPts" type="int" value="5"/>
-      <param name="min_cluster" type="int" value="8"/>
+    <!-- DBSCAN's Parameter -->
+    <!-- EPS大一点可以让杂草聚在一起变成strange：0.45，小一点可以识别到更多的树0.2 -->
+    <param name="EPS" type="double" value="2.5"/>
+    <param name="MinPts" type="int" value="5"/>
+    <param name="min_cluster" type="int" value="180"/>
 
-      <!-- Ceres' Parameter -->
-      <param name="tree_residual" type="double" value="0.01"/>
-      <param name="tree_radius_max" type="double" value="0.16"/>
-      <param name="tree_radius_min" type="double" value="0.05"/>
+    <!-- Ceres' Parameter -->
+    <param name="tree_residual" type="double" value="1"/>
+    <param name="tree_radius_max" type="double" value="0.16"/>
+    <param name="tree_radius_min" type="double" value="0.05"/>
+
 
     </node>
 
