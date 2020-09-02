@@ -142,11 +142,11 @@ public:
         ros::param::get("~localMapRadius",localMapRadius);
 
         myAtlas.localMapRadius = localMapRadius;
-        landmarkPCL_sub = nh_.subscribe("/tree_center", 1, &TreeCenterLocalization::tree_callback, this);
+        landmarkPCL_sub = nh_.subscribe("/tree_center", 100, &TreeCenterLocalization::tree_callback, this);
 
-        landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 50);
-        my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 10);
-        my_odometry_publisher = nh_.advertise<nav_msgs::Odometry>("my_Odometry", 10);
+        landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 100);
+        my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 100);
+        my_odometry_publisher = nh_.advertise<nav_msgs::Odometry>("my_Odometry", 100);
 
         firstTrackFlag = true;
         lastPoseOfICP.setIdentity();

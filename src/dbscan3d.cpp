@@ -120,18 +120,11 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     }
 
     /*Run DBscan*/
-    clock_t startTime,endTime;
-    startTime = clock();//计时开始
     NewDbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
 
-
-
-
-    endTime = clock();//计时结束
-    cout << "The DBSCAN Clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     /*Remove little cluster and add Residual*/
     auto ClusterBegin = dataset.channels[NewDbscanDriver::cluster].values.begin();
@@ -182,13 +175,13 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
         Solve(options, &problem, &summary);
         //std::cout << summary.BriefReport() << "\n";
         r= abs(r);
-        std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<" residual: "<<summary.final_cost<<"\n";
+        //std::cout << "Before   x: " << x << " y: " << y << " r: " << r <<" residual: "<<summary.final_cost<<"\n";
         //push the result to output vector
         Point3f temp3d(x, y, r);
 
         if(r>=tree_radius_min && r<=tree_radius_max && summary.final_cost<=tree_residual){
             //Final good tree output
-            std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
+            //std::cout << "Confirmed   x: " << x << " y: " << y << " r: " << r <<"\n";
             geometry_msgs::Point32 treeCenterPt;
             treeCenterPt.x = x;
             treeCenterPt.y = y;
@@ -213,6 +206,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
 
 void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 {
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
     //Convert sensor_msgs::PointCloud2 to sensor_msgs::PointCloud
     sensor_msgs::PointCloud output;
     output.header = input->header;
@@ -279,8 +274,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    cout << "The spectralClustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     //RANSAC BSCAN
-    clock_t startTime,endTime;
-    startTime = clock();//计时开始
     ransacDriver oldDriver;
 
     oldDriver.setGroundZMaxAndMin(groundZMax, groundZMin);
@@ -293,8 +286,6 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 
     oldDriver.groundRemove(output);
     //tree_cloud_pub.publish(oldDriver.PCLforOutput);
-    endTime = clock();//计时结束
-    cout << "The RANSAC run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     for(int i = 0; i < oldDriver.PCLforOutput.points.size(); i++){
         if(oldDriver.PCLforOutput.channels[ransacDriver::INLINER].values[i] == 1){
@@ -333,6 +324,11 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    }
 //    cout<<"dataset_size: "<<dataset.points.size() << endl;
 //    cout<<"EPS:     "<<EPS<<"      MinPts: "<<MinPts<<endl;
+
+
+
+    endTime = clock();//计时结束
+    cout << "The DBSCAN run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 
@@ -380,12 +376,12 @@ int main(int argc, char** argv) {
     cout<<"tree_point:"<<tree_pt<<endl;
     cout<<"scan_topic_name:"<<scan_name<<endl;
     circle_pub = nh_.advertise<sensor_msgs::PointCloud2>(tree_pt,1);
-    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 1, point_callback);
+    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 100, point_callback);
 
     //test
-    cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 1);
-    tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 1);
-    tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 1);
+    cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 100);
+    tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 100);
+    tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 100);
 
 
 

@@ -7,7 +7,7 @@
     <param name="map_name" type="string" value="/map"/>
 
     <param name="MaxCorrespondenceDistance" type="double" value="1"/>
-    <param name="MaximumIterations" type="int" value="30"/>
+    <param name="MaximumIterations" type="int" value="100"/>
     <param name="TransformationEpsilon" type="double" value="1e-10"/>
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
     <param name="localMapRadius" type="double" value="100"/>
@@ -20,7 +20,7 @@
     <param name="removalBeginTime" type="double" value="10.0"/>
   </node>
 
-  <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" >
+  <node name="tree_cluster3d" pkg="dbscan" type="dbscan3d" output= "screen" >
 
       <!-- No use parameter from 2d dbscan-->
       <param name="scan_number_360" type="double" value="1080.0"/>

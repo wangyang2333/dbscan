@@ -42,7 +42,7 @@ void ransacDriver::groundRemoveSided(sensor_msgs::PointCloud &PCLin) {
     double iterationNum = ceil(log(1 - confidence)/log(1 - pow(inlierRatio, sampleNum)));
 
     double bestALeft, bestBLeft, bestCLeft, bestNumInlinerLeft = -INFINITY;
-    ROS_INFO("it num: %f ",iterationNum);
+    //ROS_INFO("it num: %f ",iterationNum);
     for(int itn = 0; itn < iterationNum; itn++){
         /*RANdom SAmple and Fittig*/
         double a = 0.0;
@@ -97,14 +97,14 @@ void ransacDriver::groundRemoveSided(sensor_msgs::PointCloud &PCLin) {
         /*End Condition*/
         double currentBestRatio = bestNumInlinerLeft / CandidateNumLeft;
         if(currentBestRatio > ratioCondition){
-            ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
+            //ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
             break;
         }
     }
 
 
     double bestARight, bestBRight, bestCRight, bestNumInlinerRight = -INFINITY;
-    ROS_INFO("it num: %f ",iterationNum);
+    //ROS_INFO("it num: %f ",iterationNum);
     for(int itn = 0; itn < iterationNum; itn++){
         /*RANdom SAmple and Fittig*/
         double a = 0.0;
@@ -159,7 +159,7 @@ void ransacDriver::groundRemoveSided(sensor_msgs::PointCloud &PCLin) {
         /*End Condition*/
         double currentBestRatio = bestNumInlinerRight / CandidateNumLeft;
         if(currentBestRatio > ratioCondition){
-            ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
+            //ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
             break;
         }
     }
@@ -200,8 +200,8 @@ void ransacDriver::groundRemoveSided(sensor_msgs::PointCloud &PCLin) {
     }
 
     //PCLforOutput.channels[INLINER] = bestCandidates;
-    ROS_INFO("Final LEFT Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestALeft, bestBLeft, bestCLeft, bestNumInlinerLeft / CandidateNumLeft);
-    ROS_INFO("Final RIGHT Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestARight, bestBRight, bestCRight, bestNumInlinerRight / CandidateNumRight);
+    //ROS_INFO("Final LEFT Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestALeft, bestBLeft, bestCLeft, bestNumInlinerLeft / CandidateNumLeft);
+    //ROS_INFO("Final RIGHT Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestARight, bestBRight, bestCRight, bestNumInlinerRight / CandidateNumRight);
 }
 
 void ransacDriver::groundRemove(sensor_msgs::PointCloud &PCLin) {
@@ -233,7 +233,7 @@ void ransacDriver::groundRemove(sensor_msgs::PointCloud &PCLin) {
     double iterationNum = ceil(log(1 - confidence)/log(1 - pow(inlierRatio, sampleNum)));
 
     double bestA, bestB, bestC, bestNumInliner = -INFINITY;
-    ROS_INFO("it num: %f ",iterationNum);
+    //ROS_INFO("it num: %f ",iterationNum);
     for(int itn = 0; itn < iterationNum; itn++){
         /*RANdom SAmple and Fittig*/
         double a = 0.0;
@@ -288,7 +288,7 @@ void ransacDriver::groundRemove(sensor_msgs::PointCloud &PCLin) {
         /*End Condition*/
         double currentBestRatio = bestNumInliner / CandidateNum;
         if(currentBestRatio > ratioCondition){
-            ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
+            //ROS_INFO("End earlier with ratio Condition: %f", currentBestRatio);
             break;
         }
     }
@@ -312,6 +312,6 @@ void ransacDriver::groundRemove(sensor_msgs::PointCloud &PCLin) {
 }
 
     //PCLforOutput.channels[INLINER] = bestCandidates;
-    ROS_INFO("Final Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestA, bestB, bestC, bestNumInliner / CandidateNum);
+    //ROS_INFO("Final Plane is %f x + %f y + %f z - 1 = 0 with ratio: %f", bestA, bestB, bestC, bestNumInliner / CandidateNum);
 
 }

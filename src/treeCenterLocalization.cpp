@@ -34,7 +34,7 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
     endTime = clock();//计时结束
-    cout << "The run CallBack localization time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    cout << "The localization run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 void TreeCenterLocalization::posePredict(Eigen::Matrix<float, 4, 4> tfA,
