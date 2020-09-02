@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
     cout<<"tree_point:"<<tree_pt<<endl;
     cout<<"scan_topic_name:"<<scan_name<<endl;
 
-    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 100, point_callback);
+    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 1, point_callback);
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 100);
     tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 100);
     tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 100);
