@@ -57,8 +57,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
 
     sensor_msgs::PointCloud2 ROS_PCL2_temp;
     pcl::PCLPointCloud2 PCL_PCL2_temp;
-
-    sensor_msgs::convertPointCloudToPointCloud2(myAtlas.getStableMap(), ROS_PCL2_temp);
+    sensor_msgs::convertPointCloudToPointCloud2(myAtlas.getStableMapWithTF(velodyne_to_map), ROS_PCL2_temp);
     pcl_conversions::toPCL(ROS_PCL2_temp, PCL_PCL2_temp);
     pcl::fromPCLPointCloud2(PCL_PCL2_temp, *PCL_mapCloud);
 
@@ -348,6 +347,33 @@ sensor_msgs::PointCloud TreeAtlas::getLocalMapWithTF(tf::StampedTransform curren
     }
 
     return localMap;
+}
+
+sensor_msgs::PointCloud TreeAtlas::getStableMapWithTF(tf::StampedTransform currentTF) {
+    sensor_msgs::PointCloud localStableMap = stableMap;
+    localStableMap.points.clear();
+    /*Build Octree with full landmarks*/
+    oldDriver.octreeConstructFromPCL(stableMap);
+    /*Transform TF to vector*/
+    vector<double> vec;
+    vec.resize(3);
+    vec[0] = currentTF.getOrigin().getX();
+    vec[1] = currentTF.getOrigin().getY();
+    vec[2] = currentTF.getOrigin().getZ();
+    /*Do radiusNN on Octree*/
+    oldDriver.searchOctreeRadiusNN(vec, stableMap, oldDriver.root, localMapRadius);
+    vector<vector<double>> currentResult = oldDriver.getResultVector();
+    vector<int> currentIndex = oldDriver.getResultIndex();
+    oldDriver.clearResult();
+    /*Pack Idx and Vec to PCL*/
+    for(int i = 0; i < currentResult.size(); i++){
+        geometry_msgs::Point32 tempPt;
+        tempPt.x = currentResult[i][0];
+        tempPt.y = currentResult[i][1];
+        tempPt.z = currentResult[i][2];
+        localStableMap.points.push_back(tempPt);
+    }
+    return localStableMap;
 }
 
 void TreeAtlas::atlasIntializationWithPCL(const sensor_msgs::PointCloud& initialPCL, string globalFrame){

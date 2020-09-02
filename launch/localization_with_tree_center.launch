@@ -6,11 +6,11 @@
     <param name="odom_name" type="string" value="/odom_TSLAM"/>
     <param name="map_name" type="string" value="/map"/>
 
-    <param name="MaxCorrespondenceDistance" type="double" value="1"/>
+    <param name="MaxCorrespondenceDistance" type="double" value="1.5"/>
     <param name="MaximumIterations" type="int" value="100"/>
     <param name="TransformationEpsilon" type="double" value="1e-10"/>
     <param name="EuclideanFitnessEpsilon" type="double" value="0.001"/>
-    <param name="localMapRadius" type="double" value="100"/>
+    <param name="localMapRadius" type="double" value="35"/>
 
     <param name="stableTimeThreshould" type="double" value="10.0"/>
     <param name="stableTrackingThreshould" type="double" value="30"/>

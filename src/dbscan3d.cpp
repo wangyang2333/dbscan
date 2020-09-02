@@ -102,7 +102,6 @@ private:
 };
 ros::Publisher cloud_pub;
 ros::Publisher tree_cloud_pub;
-ros::Publisher circle_pub;
 ros::Publisher tree_visual_cloud_pub;
 sensor_msgs::LaserScan centers;
 
@@ -120,10 +119,14 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     }
 
     /*Run DBscan*/
+    clock_t startTime, endTime;
+    startTime = clock();//计时开始
     NewDbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
+    endTime = clock();//计时结束
+    cout << "The clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
     /*Remove little cluster and add Residual*/
@@ -375,10 +378,8 @@ int main(int argc, char** argv) {
     cout<<"scan_number_360:"<<scan_num360<<endl;
     cout<<"tree_point:"<<tree_pt<<endl;
     cout<<"scan_topic_name:"<<scan_name<<endl;
-    circle_pub = nh_.advertise<sensor_msgs::PointCloud2>(tree_pt,1);
-    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 100, point_callback);
 
-    //test
+    ros::Subscriber scan_sub = nh_.subscribe(scan_name, 100, point_callback);
     cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("cloud1", 100);
     tree_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_center", 100);
     tree_visual_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("tree_cloud_visual", 100);

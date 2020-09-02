@@ -75,6 +75,7 @@ public:
     }
     void atlasIntializationWithPCL(const sensor_msgs::PointCloud& initialPCL, string globalFrame);
     sensor_msgs::PointCloud getLocalMapWithTF(tf::StampedTransform currentTF);
+    sensor_msgs::PointCloud getStableMapWithTF(tf::StampedTransform currentTF);
     void addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, const tf::StampedTransform& currentTF);
     sensor_msgs::PointCloud getFullAtlas(){return fullLandMarks;}
     sensor_msgs::PointCloud getStableMap(){return stableMap;}
