@@ -31,6 +31,7 @@ void NewDbscanDriver::clusterVector(vector<vector<double>> currentVector, vector
 
 void NewDbscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
     /*Open PCL channels*/
+    ROS_ERROR("pointsize: %d",PCL.points.size());
     PCLforOutput = PCL;
     PCLforOutput.channels.clear();
     PCLforOutput.channels.resize(3);

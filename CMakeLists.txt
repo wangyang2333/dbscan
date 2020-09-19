@@ -24,6 +24,20 @@ FIND_PACKAGE(OpenCV REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 include_directories( "/usr/include/eigen3" )
 
+
+find_package(CUDA REQUIRED)
+if(${CUDA_FOUND})
+ set(CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+ set(CUDA_SEPARABLE_COMPILATION ON)
+ include_directories(${CUDA_INCLUDE_DIRS})
+ set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+ set(CUDA_NVCC_FLAGS -arch=sm_61;-O3;-G;-g;-std=c++11)#根据具体GPU性能更改算力参数
+ #SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_61,code=sm_61;-std=c++11;-O3;-G;-g)
+ link_directories($ENV{CUDA_PATH}/lib/x64)
+else(${CUDA_FOUND})
+ MESSAGE(STATUS "cuda not found!")
+endif(${CUDA_FOUND})
+
 add_subdirectory(/home/xcy/my_install/dlib/dlib dlib_build)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -152,10 +166,11 @@ target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
 #add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h src/kmeans.cpp src/kmeans.h src/gmm_EM.cpp src/gmm_EM.h src/spectral_clustering.cpp src/spectral_clustering.h src/dbscan_clustering.cpp src/dbscan_clustering.h)
-add_executable(dbscan3d src/dbscan3d.cpp src/octree_nn.cpp src/octree_nn.h src/dbscan_clustering.cpp src/dbscan_clustering.h src/pca_filter.cpp src/pca_filter.h src/groundRemovalRANSAC.cpp src/groundRemovalRANSAC.h src/fpfh_pcl.cpp src/fpfh_pcl.h src/pass_through.cpp src/pass_through.h src/dbscan_correction.cpp src/dbscan_correction.h)
+CUDA_ADD_EXECUTABLE(dbscan3d src/dbscan3d.cpp src/octree_nn.cpp src/octree_nn.h src/dbscan_clustering.cpp src/dbscan_clustering.h src/pca_filter.cpp src/pca_filter.h src/groundRemovalRANSAC.cpp src/groundRemovalRANSAC.h src/fpfh_pcl.cpp src/fpfh_pcl.h src/pass_through.cpp src/pass_through.h src/dbscan_correction.cpp src/dbscan_correction.h src/dbscan_cuda.cu src/dbscan_cuda.cuh)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )
+target_link_libraries( dbscan3d dlib::dlib ${CUDA_LIBRARIES} )
 
 
 add_executable(sendgoal2 src/sendgoal2.cpp)

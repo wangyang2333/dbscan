@@ -36,6 +36,7 @@
 #include <dlib/svm_threaded.h>
 #include <dlib/optimization/max_cost_assignment.h>
 #include <tf/transform_listener.h>
+#include <host_defines.h>
 
 #include "octree_nn.h"
 
@@ -43,8 +44,6 @@
 #define SRC_TREECENTERLOCALIZATION_H
 
 using namespace std;
-
-
 
 class TreeAtlas{
     friend class TreeCenterLocalization;
