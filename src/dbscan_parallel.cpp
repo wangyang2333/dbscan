@@ -13,16 +13,20 @@ void ParallelDbscanDriver::dbscanClustering(sensor_msgs::PointCloud &PCL) {
 }
 
 void ParallelDbscanDriver::mainThread() {
-    thread t(subThread);
-    t.join();
+    ROS_INFO("num thread max: %d", thread::hardware_concurrency());
+
+    vector<thread> threads;
+    for(auto i = 0; i < 100; i++){
+        threads.emplace_back(subThread,i);
+    }
+    for(auto i = 0; i < 100; i++){
+        //threads[i].join();
+    }
     return;
 }
 
-void ParallelDbscanDriver::subThread() {
-    while(true){
-        cout<<"hello"<<endl;
-    }
-
+void ParallelDbscanDriver::subThread(int i) {
+    ROS_INFO("i am thread %d",i);
     return;
 }
 

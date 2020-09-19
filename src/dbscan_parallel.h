@@ -23,7 +23,7 @@ private:
 
 public:
     void dbscanClustering(sensor_msgs::PointCloud& PCL);
-    static void subThread();
+    static void subThread(int i);
     void mainThread();
 
 
