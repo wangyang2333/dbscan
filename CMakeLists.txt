@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8.3)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 project(dbscan)
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11 -o3 -Wall")
+#set(CMAKE_BUILD_TYPE "Release")
+#set(CMAKE_CXX_FLAGS "-std=c++11 -o3 -Wall")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -166,7 +166,7 @@ target_link_libraries( dbscan ${CERES_LIBRARIES} )
 target_link_libraries( dbscan dlib::dlib )
 
 #add_executable(dbscan3d src/dbscan3d.cpp src/kd_tree_nn.cpp src/kd_tree_nn.h src/octree_nn.cpp src/octree_nn.h src/kmeans.cpp src/kmeans.h src/gmm_EM.cpp src/gmm_EM.h src/spectral_clustering.cpp src/spectral_clustering.h src/dbscan_clustering.cpp src/dbscan_clustering.h)
-CUDA_ADD_EXECUTABLE(dbscan3d src/dbscan3d.cpp src/octree_nn.cpp src/octree_nn.h src/dbscan_clustering.cpp src/dbscan_clustering.h src/pca_filter.cpp src/pca_filter.h src/groundRemovalRANSAC.cpp src/groundRemovalRANSAC.h src/fpfh_pcl.cpp src/fpfh_pcl.h src/pass_through.cpp src/pass_through.h src/dbscan_correction.cpp src/dbscan_correction.h src/dbscan_cuda.cu src/dbscan_cuda.cuh)
+CUDA_ADD_EXECUTABLE(dbscan3d src/dbscan3d.cpp src/octree_nn.cpp src/octree_nn.h src/dbscan_clustering.cpp src/dbscan_clustering.h src/pca_filter.cpp src/pca_filter.h src/groundRemovalRANSAC.cpp src/groundRemovalRANSAC.h src/fpfh_pcl.cpp src/fpfh_pcl.h src/pass_through.cpp src/pass_through.h src/dbscan_correction.cpp src/dbscan_correction.h src/dbscan_cuda.cu src/dbscan_cuda.cuh src/dbscan_parallel.cpp src/dbscan_parallel.h)
 target_link_libraries( dbscan3d ${OpenCV_LIBS} )
 target_link_libraries( dbscan3d ${CERES_LIBRARIES} )
 target_link_libraries( dbscan3d dlib::dlib )
