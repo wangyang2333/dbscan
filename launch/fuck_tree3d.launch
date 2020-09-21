@@ -40,7 +40,7 @@
   </node>
 
 
-<!--   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dbscan)/rviz/clustering.rviz" required="true" /> -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dbscan)/rviz/clustering.rviz" required="true" />
   <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find dbscan)/rviz/fuck_tree3d.rviz" required="true" /-->
 
 </launch>

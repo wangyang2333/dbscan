@@ -127,7 +127,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
     endTime = clock();//计时结束
-    cout << "The clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    //cout << "The clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
     /*Remove little cluster and add Residual*/
@@ -332,7 +332,7 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 
 
     endTime = clock();//计时结束
-    cout << "The DBSCAN run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    //cout << "The DBSCAN run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 
