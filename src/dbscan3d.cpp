@@ -30,6 +30,7 @@
 //#include "spectral_clustering.h"
 #include "groundRemovalRANSAC.h"
 #include "dbscan_correction.h"
+#include "dbscan_clustering.h"
 #include "dbscan_parallel.h"
 #include "pass_through.h"
 //#include "fpfh_pcl.h"
@@ -122,11 +123,12 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     /*Run DBscan*/
     clock_t startTime, endTime;
     startTime = clock();//计时开始
-    NewDbscanDriver oldDriver;
+    DbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
     endTime = clock();//计时结束
+    /*Experiment1*/
     //cout << "The clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
 
@@ -146,6 +148,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     for(int j = 1; j < currentClusterIdx.size(); j++){
         double temp_dist = dataset.points[currentClusterIdx[j].front()].x*dataset.points[currentClusterIdx[j].front()].x
                 +dataset.points[currentClusterIdx[j].front()].y*dataset.points[currentClusterIdx[j].front()].y;
+
+        temp_dist = 1.0; //for experiment only
         if(currentClusterIdx[j].size() < (min_cluster / temp_dist) ){
             for(int i = 0; i < currentClusterIdx[j].size(); i++){
                 dataset.channels[NewDbscanDriver::type].values[currentClusterIdx[j][i]] = NewDbscanDriver::little;
@@ -199,8 +203,22 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
                 dataset.channels[NewDbscanDriver::type].values[currentClusterIdx[j][k]] = NewDbscanDriver::strange;
                 dataset.channels[NewDbscanDriver::cluster].values[currentClusterIdx[j][k]] = 0.0;
             }
+            currentClusterIdx.erase(currentClusterIdx.begin() + j);
+            j--;
         }
     }
+
+    /*Experiment 1 count cluster*/
+    cout<<"Number of trees after Multi-criteria Detection"<< treeCenters.points.size() - 1<<endl;
+
+//    /*Experiment 1 count maximum distance*/
+//    double max =  0;
+//    for(auto pt : treeCenters.points){
+//        double temp = sqrt(pt.x*pt.x +pt.y*pt.y + pt.z*pt.z);
+//        if(temp > max ) max = temp;
+//    }
+//    cout<<"Max Distance: "<< max<<endl;
+
     tree_visual_cloud_pub.publish(dataset);
     treeCenters.header = dataset.header;
     tree_cloud_pub.publish(treeCenters);

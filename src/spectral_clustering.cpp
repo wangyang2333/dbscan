@@ -205,7 +205,7 @@ sensor_msgs::PointCloud spectralClustering(sensor_msgs::PointCloud PCL){
     //L = D - W;
     L = I - D.inverse()*W;
     endTime = clock();//计时结束
-    cout << "The Laplacian construction finish time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+    cout << "The Laplacian construction finish time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC <<                                                                                  "s" << endl;
 
     //Use SVD to avoid Complex eigenvalue?
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(L, Eigen::ComputeThinU | Eigen::ComputeThinV );
