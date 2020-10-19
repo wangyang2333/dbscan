@@ -33,7 +33,7 @@ int main(int argc, char** argv){
         tf::StampedTransform transform;
         try{
             listener.lookupTransform("/map", "/base_link",
-                                     ros::Time(0), transform);aaaa
+                                     ros::Time(0), transform);
         }
         catch (tf::TransformException ex){
             ROS_ERROR("%s",ex.what());
