@@ -128,7 +128,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     endTime = clock();//计时结束
     cout << "The clustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
-
+    startTime = clock();//计时开始
     /*Remove little cluster and add Residual*/
     auto ClusterBegin = dataset.channels[NewDbscanDriver::cluster].values.begin();
     auto ClusterEnd = dataset.channels[NewDbscanDriver::cluster].values.end();
@@ -203,6 +203,8 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     tree_visual_cloud_pub.publish(dataset);
     treeCenters.header = dataset.header;
     tree_cloud_pub.publish(treeCenters);
+    endTime = clock();//计时结束
+    cout << "The detection run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 
@@ -277,6 +279,8 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
 //    cout << "The spectralClustering run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
     //RANSAC BSCAN
+        //test Kmeans
+    startTime = clock();//计时开始
     ransacDriver oldDriver;
 
     oldDriver.setGroundZMaxAndMin(groundZMax, groundZMin);
@@ -306,6 +310,10 @@ void point_callback(const sensor_msgs::PointCloud2::ConstPtr& input)
             i--;
         }
     }
+
+    endTime = clock();//计时结束
+    cout << "The RANSAC run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
 
     sensor_msgs::PointCloud dataset = oldDriver.PCLforOutput;
     dataset.header = input->header;

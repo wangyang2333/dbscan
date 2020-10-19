@@ -33,8 +33,6 @@ void TreeCenterLocalization::tree_callback(const sensor_msgs::PointCloud::ConstP
         }
     }
     landmark_cloud_pub.publish(myAtlas.getFullAtlas());
-    endTime = clock();//计时结束
-    cout << "The localization run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 }
 
 void TreeCenterLocalization::posePredict(Eigen::Matrix<float, 4, 4> tfA,
@@ -51,6 +49,8 @@ void TreeCenterLocalization::posePredict(Eigen::Matrix<float, 4, 4> tfA,
 }
 
 bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
     //Transform datatype to use PCL LIB
     pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_mapCloud (new pcl::PointCloud<pcl::PointXYZ>);
     pcl::PointCloud<pcl::PointXYZ>::Ptr PCL_obsCloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -136,9 +136,13 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
         }
         ROS_ERROR("No convergence In full ICP!");
     }
+    endTime = clock();//计时结束
+    cout << "The stable ICP run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     return icp.hasConverged();
 }
 bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
+    clock_t startTime,endTime;
+    startTime = clock();//计时开始
     /*Track with current map*/
     sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
 
@@ -211,6 +215,8 @@ bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud:
                 localMap.channels[IdxInFullMap].values[currentCorrespondence.index_match];
     }
     myAtlas.addPointsToMapWithTF(ptsToBeAddedToMap, velodyne_to_map);
+    endTime = clock();//计时结束
+    cout << "The full ICP run time is: " <<(double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
     return icp.hasConverged();
 }
 
