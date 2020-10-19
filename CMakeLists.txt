@@ -198,6 +198,10 @@ add_executable(fake_sensormsg_pointcloud src/fake_sensormsg_pointcloud.cpp)
 add_dependencies(fake_sensormsg_pointcloud ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(fake_sensormsg_pointcloud ${catkin_LIBRARIES})
 
+add_executable(read_position src/read_position.cpp)
+add_dependencies(read_position ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(read_position ${catkin_LIBRARIES})
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
