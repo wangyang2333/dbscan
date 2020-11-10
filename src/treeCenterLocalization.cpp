@@ -68,8 +68,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     //Configure and run ICP
     pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
     icp.setInputSource(PCL_obsCloud);
-    icp.setInputTarget (PCL_mapCloud);
-
+    icp.setInputTarget(PCL_mapCloud);
 
     // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
     icp.setMaxCorrespondenceDistance (MaxCorrespondenceDistance);
@@ -123,6 +122,12 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
         my_odometry.pose.pose = my_pose.pose;
         my_odometry.header = my_pose.header;
         my_odometry_publisher.publish(my_odometry);
+        /*Publish Trajectory in Path msg*/
+
+        robotPath.header.stamp = landmarkPCL->header.stamp;
+        robotPath.header.frame_id = map_name;
+        robotPath.poses.push_back(my_pose);
+        path_pub.publish(robotPath);
     }else{
         ROS_ERROR("No convergence In Stable ICP!");
         for(int i = 0; i < currentCorrespondences.size(); i++){

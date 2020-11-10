@@ -26,15 +26,12 @@
 
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PointStamped.h>
+
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/icp.h>
 
-
-
-#include <geometry_msgs/PointStamped.h>
-
-#include <dlib/svm_threaded.h>
-#include <dlib/optimization/max_cost_assignment.h>
 #include <tf/transform_listener.h>
 #include <host_defines.h>
 
@@ -116,6 +113,9 @@ private:
     ros::Publisher my_pose_publisher;
     nav_msgs::Odometry my_odometry;
     ros::Publisher my_odometry_publisher;
+    ros::Publisher path_pub;
+
+    nav_msgs::Path robotPath;
 
 
     geometry_msgs::Point32 changeFrame(geometry_msgs::Point32 sourcePoint,
@@ -147,6 +147,8 @@ public:
         landmark_cloud_pub = nh_.advertise<sensor_msgs::PointCloud>("discrete_map", 100);
         my_pose_publisher = nh_.advertise<geometry_msgs::PoseStamped>("my_pose", 100);
         my_odometry_publisher = nh_.advertise<nav_msgs::Odometry>("my_Odometry", 100);
+
+        path_pub = nh_.advertise<nav_msgs::Path>("trajectory",1, true);
 
         firstTrackFlag = true;
         lastPoseOfICP.setIdentity();
