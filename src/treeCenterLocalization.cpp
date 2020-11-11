@@ -146,7 +146,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
     return icp.hasConverged();
 }
 bool TreeCenterLocalization::ICPwithfullLandmarks(const sensor_msgs::PointCloud::ConstPtr& landmarkPCL) {
-    clock_t startTime,endTime;
+    clock_t startTime, endTime;
     startTime = clock();//计时开始
     /*Track with current map*/
     sensor_msgs::PointCloud localMap = myAtlas.getLocalMapWithTF(velodyne_to_map);
@@ -287,8 +287,6 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, co
             i--;
         }
     }
-    /*If this point has a old famous neighbor erase it*/
-    //TODO: erase new re Track point
 
     sensor_msgs::PointCloud temp_map;
     realTimeTransformPointCloud(map_name, currentTF, pointsToBeAdded.header.stamp, pointsToBeAdded, temp_map);
@@ -324,6 +322,15 @@ void TreeAtlas::addPointsToMapWithTF(sensor_msgs::PointCloud pointsToBeAdded, co
     stableMap.points.clear();
     for(int i = 0; i < fullLandMarks.points.size(); i ++){
         if(fullLandMarks.channels[TrackingTimes].values[i] > stableTrackingThreshould){
+//            /*If this point has a old famous neighbor, erase it*/
+//            bool duplicated = false;
+//            for(int j = 0; j < fullLandMarks.points.size(); j++){
+//                if(((pointsToBeAdded.points[i].x - fullLandMarks.points[j].x)*(pointsToBeAdded.points[i].x - fullLandMarks.points[j].x)+
+//                    (pointsToBeAdded.points[i].y - fullLandMarks.points[j].y)*(pointsToBeAdded.points[i].y - fullLandMarks.points[j].y)+
+//                    (pointsToBeAdded.points[i].z - fullLandMarks.points[j].z)*(pointsToBeAdded.points[i].z - fullLandMarks.points[j].z)) < 1){
+//
+//                }
+//            }
             stableMap.points.push_back(fullLandMarks.points[i]);
         }
     }
