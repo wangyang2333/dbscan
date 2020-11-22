@@ -29,6 +29,7 @@
 //#include "gmm_EM.h"
 //#include "spectral_clustering.h"
 #include "groundRemovalRANSAC.h"
+#include "dbscan_parallel.h"
 #include "dbscan_correction.h"
 #include "pass_through.h"
 //#include "fpfh_pcl.h"
@@ -121,7 +122,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     /*Run DBscan*/
     clock_t startTime, endTime;
     startTime = clock();//计时开始
-    NewDbscanDriver oldDriver;
+    ParallelDbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
