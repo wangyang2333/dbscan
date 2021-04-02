@@ -39,7 +39,8 @@ int main(int argc, char** argv){
             ROS_ERROR("%s",ex.what());
             ros::Duration(1.0).sleep();
         }
-        ROS_INFO("x = %f, y = %f", transform.getOrigin().getX(), transform.getOrigin().getY());
+        printf("x = %f, y = %f", transform.getOrigin().getX(), transform.getOrigin().getY());
+        cout<<endl;
         rate.sleep();
     }
     return 0;

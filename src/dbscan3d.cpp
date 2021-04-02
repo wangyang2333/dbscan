@@ -122,7 +122,7 @@ void DBSCAN(sensor_msgs::PointCloud& dataset,double eps,int minpts){//按照xy�
     /*Run DBscan*/
     clock_t startTime, endTime;
     startTime = clock();//计时开始
-    ParallelDbscanDriver oldDriver;
+    NewDbscanDriver oldDriver;
     oldDriver.setEPSandMinPts(eps, minpts);
     oldDriver.dbscanClustering(tempTrue);
     dataset.channels = oldDriver.PCLforOutput.channels;
