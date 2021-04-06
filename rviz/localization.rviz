@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /Pose1
         - /Odometry1/Shape1
       Splitter Ratio: 0.5
     Tree Height: 150
@@ -156,7 +157,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 844
+      Max Intensity: 229
       Min Color: 0; 0; 0
       Min Intensity: 0
       Name: PointCloud
@@ -183,7 +184,7 @@ Visualization Manager:
       Shaft Length: 1
       Shaft Radius: 0.300000012
       Shape: Arrow
-      Topic: /my_pose
+      Topic: /imu_pose
       Unreliable: false
       Value: true
     - Alpha: 1
@@ -413,4 +414,4 @@ Window Geometry:
     collapsed: true
   Width: 1301
   X: 65
-  Y: 336
+  Y: 454
