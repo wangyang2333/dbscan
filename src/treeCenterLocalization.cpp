@@ -124,6 +124,7 @@ bool TreeCenterLocalization::ICPwithStableMap(const sensor_msgs::PointCloud::Con
         my_odometry_publisher.publish(my_odometry);
         /*Publish Trajectory in Path msg*/
 
+
         robotPath.header.stamp = landmarkPCL->header.stamp;
         robotPath.header.frame_id = map_name;
         robotPath.poses.push_back(my_pose);
